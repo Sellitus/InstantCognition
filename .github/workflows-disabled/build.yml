@@ -1,0 +1,54 @@
+name: Build
+on:
+    push:
+        branches:
+            - '*'
+    pull_request:
+        branches:
+            - '*'
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup Workspace
+        run: sudo rm -rf ${{ github.workspace }}/*
+      
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 22
+
+      - name: Setup the local environment
+        run: sudo bash setup_env.sh
+
+      - name: Build for MacOS arm64
+        run: npm run package-mac-arm
+
+      - name: Build for MacOS x64
+        run: npm run package-mac-x64
+
+      - name: Build for Windows arm64
+        run: npm run package-win-arm
+
+      - name: Build for Windows x64
+        run: npm run package-win-x64
+
+      - name: Build for Linux arm64
+        run: npm run package-lin-arm
+
+      - name: Build for Linux x64
+        run: npm run package-lin-x64
+
+      # - name: Upload build artifacts
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: build-artifacts
+      #     path: builds/
+
+      - name: Cleanup Workspace
+        run: sudo rm -rf ${{ github.workspace }}/*

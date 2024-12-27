@@ -1,3 +1,7 @@
+# CD into the directory of this script
+cd "$(dirname "$0")" || exit 1
+
+
 
 if [[ "$(uname)" == "Darwin" ]]; then
     
@@ -46,6 +50,7 @@ else
     sudo apt -y install hfsprogs
     sudo apt -y install dmg2img
     sudo apt -y install util-linux
+    sudo apt -y install zip
 
     sudo apt -y purge nodejs
     sudo apt -y purge npm

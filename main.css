@@ -1,30 +1,48 @@
+:root {
+    --surface-container: #2d2f31;
+    --surface-container-high: #3d4043;
+    --surface-container-highest: #4a4c4f;
+    --surface-dim: #1a1c1e;
+    --primary: #006493;
+    --error: #ef4444;
+    --text-primary: #e3e3e3;
+    --divider-color: rgba(255, 255, 255, 0.08);
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Google Sans', 'Roboto', sans-serif;
     margin: 0;
     padding: 0;
     overflow: hidden;
     display: flex;
     flex-direction: row;
     height: 100vh;
-    background-color: #1e1e1e;
-    color: #fff;
+    background-color: var(--surface-dim);
+    color: var(--text-primary);
 }
 
 #side-bar {
-    width: 25px;
-    /* Collapsed width */
+    width: 30px;
     height: 100%;
-    background-color: #333;
+    background-color: var(--surface-container);
     overflow: hidden;
     z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: start;
-    transition: width 0.1s;
+    transition: width 0.025s;
     text-align: center;
     position: relative;
     /* To keep it next to the webview */
+    will-change: width;
+    transform: translateZ(0);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
 #side-bar.expanded {
@@ -33,29 +51,50 @@ body {
 }
 
 #toggle-button {
-    width: 100%;
-    background-color: #444;
+    width: calc(100% - 6px);
+    /* Adjusted from 8px for better fit */
+    background-color: var(--surface-container-high);
     border: none;
     cursor: pointer;
     color: #fff;
     text-align: center;
-    transition: background-color 0.3s;
-    margin-top: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 30px;
+    height: 3.2vh;
+    min-height: 22px;
+    max-height: 30px;
+    border-radius: 8px;
+    padding: 2px;
 }
 
 #toggle-button:hover {
-    background-color: #555;
+    background-color: var(--surface-container-highest);
+    transform: scale(1.02);
 }
 
 .menu-content {
     width: 100%;
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 2px;
+    overflow-y: auto;
+    height: calc(100vh - 50px);
+    -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+    scrollbar-width: none;     /* Hide scrollbar for Firefox */
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    scroll-snap-stop: always;
+    scroll-padding: 10px;
+    overscroll-behavior: contain;
+    scroll-snap-points-y: repeat(56px);
+    scroll-timeline: --menuScroll block;
+    animation-timeline: --menuScroll;
+    will-change: scroll-position;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
 }
 
 #side-bar.expanded .menu-content {
@@ -66,33 +105,53 @@ body {
     width: 0;
     display: flex;
     flex-direction: column;
+    background-color: var(--surface-container);
 }
 
 .settings-header {
     display: flex;
     align-items: center;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    padding: 12px 16px;
+    background-color: var(--surface-container);
 }
 
 .settings-header>h3 {
     margin: 5px 5px 11px 5px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 #close-button {
     cursor: pointer;
-    background-color: #555;
+    background-color: var(--surface-container-high);
     padding: 3px;
-    margin: -6px 7px 0 auto;
-    transition: background-color 0.3s;
-    width: 26px;
-    height: 26px;
-    border-radius: 4px;
+    margin: -4px 4px 0 auto;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
     color: #ffffff;
     border: none;
+}
+
+#close-button:hover {
+    background-color: var(--error);
+    transform: scale(1.05);
 }
 
 .setting-option {
     margin: 0 0 4px 5px;
     display: flex;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .setting-option>label {
@@ -102,54 +161,99 @@ body {
 .dropdown-section {
     display: flex;
     flex-direction: column;
-    margin-bottom: 10px;
+    margin-bottom: 0;
+    padding: 4px 0;
+    position: relative;
+}
+
+.dropdown-section:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 8px;
+    right: 8px;
+    height: 1px;
+    background-color: var(--divider-color);
+    opacity: 0.8;
 }
 
 .dropdown-section>div {
-    padding: 3px 5px;
-    /* Smaller padding */
+    padding: 2px 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     text-align: center;
-    transition: background-color 0.3s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
-    /* Prevent text from wrapping */
-    background-color: #444;
-    margin-bottom: 3px;
+    background-color: var(--surface-container-high);
+    margin: 1px 3px;
+    /* Adjusted from 4px for better fit in wider collapsed state */
+    height: 1.8vh;
+    min-height: 14px;
+    max-height: 20px;
+    font-size: clamp(14px, 1.1vh, 18px);
+    /* Increased from 9px to 11px minimum */
+    font-weight: 600;
+    scroll-snap-align: center;
+    scroll-margin: 4px;
+    animation-range: entry 25% cover 75%;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .dropdown-section>div:hover {
-    background-color: #555;
+    background-color: var(--surface-container-highest);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .dropdown-section>div.selected {
-    background-color: #222;
-    font-weight: bold;
-}
-
-.dropdown-section>#open-link-external {
-    margin-left: -3.5px;
+    background-color: var(--primary);
+    color: #ffffff;
 }
 
 .collapsed-menu-logo {
-    width: 17px;
-    height: 17px;
+    width: auto;
+    height: 1.7vh;
+    min-width: 12px;
+    min-height: 12px;
+    max-width: 20px;
+    max-height: 20px;
+    object-fit: contain;
 }
 
 .collapsed-menu-logo-long {
-    width: 24px;
-    height: 13px;
-    margin: 3px 0 3px -1.8px;
+    width: auto;
+    height: 1.3vh;
+    min-width: 16px;
+    min-height: 8px;
+    max-width: 28px;
+    max-height: 15px;
+    margin: 0.3vh 0 0.3vh -1.8px;
+    object-fit: contain;
 }
 
-.collapsed-menu-logo-swiftllm {
-    width: 20px;
-    height: 20px;
+.collapsed-menu-logo-instant-cognition {
+    width: auto;
+    height: 2.4vh;
+    min-width: 18px;
+    min-height: 18px;
+    max-width: 28px;
+    max-height: 28px;
+    object-fit: contain;
 }
 
 .slide-in {
-    transition: width 0.1s ease-in-out;
+    transition: width 0.025s ease-in-out;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+    transition: width 0.2s ease-out;
 }
 
 #claude-logo {
@@ -161,18 +265,35 @@ body {
     margin-left: -1px;
 }
 
-#llm-container {
-    flex: 1;
-    height: 100vh;
+#cognitizer-container {
+    height: 100%;
+    width: 100%;
     /* Fill remaining vertical space */
     display: flex;
+    flex-direction: row;
+}
+
+.cognitizer-browser {
+    flex: 1;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
+    will-change: flex-basis, max-width;
+    transform: translateZ(0);
+    transition: flex-basis 0.2s ease-out, max-width 0.2s ease-out;
+}
+
+#cognitizer-container.inactive {
+    display: none;
 }
 
 webview {
     flex: 1;
     height: 100%;
-    background-color: #1e1e1e;
-    transition: width 0.3s;
+    background-color: var(--surface-dim);
+    transition: width 0.025s;
+    /* border-radius: 12px;
+    margin: 8px; */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 webview.active {
@@ -194,8 +315,8 @@ webview.active {
 #browser-webview {
     flex: 1;
     height: 100%;
-    background-color: #1e1e1e;
-    transition: width 0.3s;
+    background-color: var(--surface-dim);
+    transition: width 0.025s;
 }
 
 #browser-webview.active {
