@@ -1,0 +1,182 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      new_version:
+        description: "Version number to use. Overrides default minor upgrade logic. (Required Format: X.X.X -- Example: 1.19.4)"
+        required: false
+
+jobs:
+  working-dir:
+    runs-on: self-hosted
+    outputs:
+      working_dir: tmp
+    steps:
+      - name: Create unique working directory
+        run: |
+          WORKING_DIR=workdir-$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c10)
+          echo "Unique directory created: $WORKING_DIR"
+          echo "::set-output name=working_dir::$WORKING_DIR"
+
+  release:
+    runs-on: self-hosted
+    outputs:
+      working_dir: tmp
+    needs: working-dir
+    steps:
+      - name: Echo inputs and working_dir and set output
+        run: |
+          echo "New Version: ${{ github.event.inputs.new_version }}"
+          echo "Working Dir: ${{ needs.working-dir.outputs.working_dir }}"
+          echo "::set-output name=working_dir::${{ needs.working-dir.outputs.working_dir }}"
+
+      - name: Cleanup Workspace
+        run: sudo rm -rf ${{ github.workspace }}/*
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 22
+
+      - name: Add required Ubuntu packages
+        run: sudo bash setup_env.sh
+
+      - name: Get new version
+        id: get_version
+        run: |
+          git stash
+          if [[ -n "${{ github.event.inputs.new_version }}" ]]; then
+          new_version="${{ github.event.inputs.new_version }}"
+            else
+          new_version=$(node --print 'require("./package-lock.json").version')
+          new_version=$(echo $new_version | awk -F. -v OFS=. '{$NF = $NF + 1; print}')
+            fi
+          git stash apply || true
+          echo "::set-output name=version::$new_version"
+
+      - name: Build for MacOS arm64
+        run: npm run package-mac-arm
+
+      - name: Build for MacOS x64
+        run: npm run package-mac-x64
+
+      - name: Build for Windows arm64
+        run: npm run package-win-arm
+
+      - name: Build for Windows x64
+        run: npm run package-win-x64
+
+      - name: Build for Linux arm64
+        run: npm run package-lin-arm
+
+      - name: Build for Linux x64
+        run: npm run package-lin-x64
+
+      - name: Create .rar for the MacOS arm64 app
+        run: |
+          rar a mac-arm.rar builds/mac-arm/InstantCognition-darwin-arm64/InstantCognition.app
+        working-directory: ${{ github.workspace }}
+
+      - name: Create .rar for the MacOS x64 app
+        run: |
+          rar a mac-x64.rar builds/mac-x64/InstantCognition-darwin-x64/InstantCognition.app
+        working-directory: ${{ github.workspace }}
+
+      - name: Create .rar for the Windows arm64 app
+        run: |
+          rar a win-arm.rar builds/win-arm/*
+        working-directory: ${{ github.workspace }}
+
+      - name: Create .rar for the Windows x64 app
+        run: |
+          rar a win-x64.rar builds/win-x64/*
+        working-directory: ${{ github.workspace }}
+
+      - name: Set name and email for GHA runner
+        run: |
+          git config --global user.email "github-actions"
+          git config --global user.name "github-actions@github.com"
+
+      - name: Bump version and create a git tag
+        run: |
+          git stash
+          npm version ${{ steps.get_version.outputs.version }} -m "Upgrade to v${{ steps.get_version.outputs.version }}"
+          git push origin HEAD --follow-tags
+          echo "::set-output name=version::${{ steps.get_version.outputs.version }}"
+          git stash apply || true
+
+      - name: Get commit messages
+        id: commit_messages
+        run: |
+          echo "::set-output name=commits::$(git log --format=%B ${{ steps.get_version.outputs.version }}..HEAD)"
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            Changes since last release:
+            ${{ steps.commit_messages.outputs.commits }}
+          draft: false
+          prerelease: false
+      
+      - name: Upload MacOS arm64 Release
+        id: mac-arm
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: mac-arm.rar
+          asset_name: mac-arm.rar
+          asset_content_type: application/rar
+
+      - name: Upload MacOS x64 Release
+        id: mac-x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: mac-x64.rar
+          asset_name: mac-x64.rar
+          asset_content_type: application/rar
+
+      - name: Upload Windows arm64 Release
+        id: win-arm
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: win-arm.rar
+          asset_name: win-arm.rar
+          asset_content_type: application/rar
+
+      - name: Upload Windows x64 Release
+        id: win-x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: win-x64.rar
+          asset_name: win-x64.rar
+          asset_content_type: application/rar
+  
+  cleanup:
+    needs: release
+    if: always()
+    runs-on: self-hosted
+    steps:
+      - name: Cleanup unique directory
+        run: |
+          echo "Cleaning up directory ${{ needs.release.outputs.working_dir }}"
+          sudo rm -rf ${{ needs.release.outputs.working_dir }}

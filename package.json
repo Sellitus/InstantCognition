@@ -1,23 +1,23 @@
 {
-  "name": "swift-llm",
-  "version": "1.0.0",
-  "description": "A cross-platform app to access LLMs with hotkeys.",
+  "name": "instant-cognition",
+  "version": "1.6.2",
+  "description": "A cross-platform app to research information quickly after a press of the hotkey.",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
-    "package-mac-arm": "electron-packager . SwiftLLM --platform=darwin --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/mac-arm --copy-files",
-    "package-mac-x64": "electron-packager . SwiftLLM --platform=darwin --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/mac-x64 --copy-files",
-    "package-win-arm": "electron-packager . SwiftLLM --platform=win32 --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/win-arm --copy-files",
-    "package-win-x64": "electron-packager . SwiftLLM --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/win-x64 --copy-files",
-    "package-lin-arm": "electron-packager . SwiftLLM --platform=linux --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/lin-arm --copy-files",
-    "package-lin-x64": "electron-packager . SwiftLLM --platform=linux --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/lin-x64 --copy-files",
+    "package-mac-arm": "electron-packager . InstantCognition --platform=darwin --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/mac-arm --copy-files",
+    "package-mac-x64": "electron-packager . InstantCognition --platform=darwin --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/mac-x64 --copy-files",
+    "package-win-arm": "electron-packager . InstantCognition --platform=win32 --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/win-arm --copy-files",
+    "package-win-x64": "electron-packager . InstantCognition --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/win-x64 --copy-files",
+    "package-lin-arm": "electron-packager . InstantCognition --platform=linux --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/lin-arm --copy-files",
+    "package-lin-x64": "electron-packager . InstantCognition --platform=linux --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/lin-x64 --copy-files",
     "build-mac-arm": "electron-builder --mac --arm64",
     "build-mac-x64": "electron-builder --mac --x64",
     "debug": "node index.js --web"
   },
   "build": {
-    "productName": "SwiftLLM",
-    "appId": "sellitus.net.swiftllm",
+    "productName": "InstantCognition",
+    "appId": "sellitus.net.instantcognition",
     "asar": true,
     "win": {
       "icon": "assets/icon.ico"
@@ -30,15 +30,17 @@
     }
   },
   "devDependencies": {
-    "@electron/packager": "^18.3.5",
-    "electron": "^32.1.0",
-    "electron-builder": "^25.0.5",
-    "node": "^22.8.0"
+    "@electron/packager": "^18.3.6",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "node": "^23.5.0"
   },
   "dependencies": {
-    "@cliqz/adblocker-electron": "^1.33.2",
-    "cross-fetch": "^4.0.0",
+    "@cliqz/adblocker-electron": "^1.34.0",
+    "cross-fetch": "^4.1.0",
     "dns-over-tls": "^0.0.9",
-    "os": "^0.1.2"
+    "npm": "^11.0.0",
+    "os": "^0.1.2",
+    "update-electron-app": "^3.1.0"
   }
 }
