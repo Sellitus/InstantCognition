@@ -75,6 +75,32 @@ body {
     transform: scale(1.02);
 }
 
+#open-config-button,
+#restart-app-button {
+    width: calc(100% - 6px);
+    background-color: var(--surface-container-high);
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 3.2vh;
+    min-height: 22px;
+    max-height: 30px;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+#open-config-button:hover,
+#restart-app-button:hover {
+    background-color: var(--surface-container-highest);
+    transform: scale(1.02);
+}
+
 .menu-content {
     width: 100%;
     display: flex;

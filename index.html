@@ -76,7 +76,7 @@
         <div onclick="navigateBackCognitizer()" id="back-cognitizer">Back (Cognitizer)</div>
         <div onclick="navigateForwardCognitizer()" id="forward-cognitizer">Forward</div>
         <div onclick="refreshPageCognitizer()" id="refresh-cognitizer">Refresh</div>
-        <div onclick="navigateHomeCognitizer()" id="home-cognitizer">Home</div>
+        <div onclick="navigateHomeReset()" id="home-cognitizer">Home</div>
       </div>
       <div class="dropdown-section">
         <div onclick="navigateBackBrowser()" id="back-browser">Back (Browser)</div>
@@ -156,6 +156,12 @@
   </div>
   <div class="setting-option">
     <input onclick="changeSetting(this.checked, 'launchAtStartup')" type="checkbox" id="launchAtStartup" class="checkboxes"><label for="launchAtStartup">Launch at OS Startup</label>
+  </div>
+  <div class="setting-option">
+    <button id="open-config-button" onclick="openConfig()">Open Settings Config File</button>
+  </div>
+  <div class="setting-option">
+    <button id="restart-app-button" onclick="restartApp()">Restart App to Apply Settings</button>
   </div>
   <!-- <div class="setting-option">
     <input onclick="changeSetting(this.checked, 'setting4')" type="checkbox" id="setting4" class="checkboxes"><label for="setting4">Setting 4</label>

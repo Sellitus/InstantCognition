@@ -40,14 +40,33 @@ check_requirements
 # CD into the directory of this script
 cd "$(dirname "$0")" || exit 1
 
+# Determine current platform
+CURRENT_PLATFORM=""
+if [[ "$HOST_OS" == "macos" ]]; then
+    CURRENT_PLATFORM="mac"
+elif [[ "$HOST_OS" == "linux" ]]; then
+    CURRENT_PLATFORM="win"
+else
+    echo "Unsupported operating system: $OSTYPE"
+    exit 1
+fi
+
+if [ "$CURRENT_PLATFORM" == "win" ]; then
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # Load nvm
+
+    nvm install --latest-npm
+
+    npm install -g npm-check-updates
+fi
+
 # Initialize timing
 script_start_time=$(date +%s)
 
 # Create builds directory if it doesn't exist
 mkdir -p builds
 
-# Define platforms and architectures
-platforms=("mac" "win" "lin")
+# Define architectures (platforms array no longer needed)
 architectures=("arm" "x64")
 
 # Function to convert architecture for folder name
@@ -102,19 +121,17 @@ rm -rf builds/*
 echo "Updating packages..."
 bash update_packages_latest.sh
 
-# Build and zip for each platform/architecture combination
-for platform in "${platforms[@]}"; do
-    for arch in "${architectures[@]}"; do
-        echo ""
-        echo "Building for $platform-$arch..."
-        echo ""
-        
-        # Build the package
-        npm run package-$platform-$arch
-        
-        # Create zip file
-        create_zip "$platform" "$arch"
-    done
+# Build and zip only for current platform
+for arch in "${architectures[@]}"; do
+    echo ""
+    echo "Building for $CURRENT_PLATFORM-$arch..."
+    echo ""
+    
+    # Build the package
+    npm run package-$CURRENT_PLATFORM-$arch
+    
+    # Create zip file
+    create_zip "$CURRENT_PLATFORM" "$arch"
 done
 
 # Calculate and display execution time

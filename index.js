@@ -7,7 +7,7 @@
 
 
 const v8 = require('v8');
-const { app, BrowserWindow, globalShortcut, Menu, Tray, nativeImage, dialog, ipcRenderer, ipcMain } = require('electron')
+const { app, BrowserWindow, globalShortcut, Menu, Tray, nativeImage, dialog, ipcRenderer, ipcMain, shell } = require('electron')
 const os = require('os');
 const path = require('path');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
@@ -210,7 +210,15 @@ ipcMain.on('toggleCognitizerView', () => {
   mainWindow.webContents.send('toggleCognitizerView');
 });
 
-
+ipcMain.on('open-config-file', () => {
+  const configPath = os.platform() === 'darwin' 
+    ? path.join(os.homedir(), '.instant-cognition', 'config.json')
+    : path.join(__dirname, '../../config.json');
+  
+  shell.openPath(configPath).catch(err => {
+    console.error('Failed to open config file:', err);
+  });
+});
 
 
 let tray = null
@@ -374,8 +382,44 @@ function createMainWindow() {
     contents.setWindowOpenHandler((details) => {
       mainWindow.webContents.send('open-url', details.url);
       return { action: 'deny' }
-    })
-  })
+    });
+    // Add timeout detection and refresh handling
+    let hasTimedOut = false;
+
+    contents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      // if (errorCode) { // Any error code
+      if (errorCode === -7) { // ERR_TIMED_OUT
+      contents.reload(); 
+      hasTimedOut = false;
+      console.log(`Page reloaded due to error ${errorCode}: ${errorDescription}`);
+      }
+    });
+
+    // Listen for any user interaction events (including window show/hide)
+    const interactionEvents = ['mousedown', 'keydown', 'touchstart', 'wheel', 'mouseleave', 'mouseover', 'mouseenter'];
+    interactionEvents.forEach(eventType => {
+      contents.on(eventType, () => {
+      if (hasTimedOut) {
+        contents.reload();
+        hasTimedOut = false;
+      }
+      });
+    });
+
+    // Listen for window show event to check timeout
+    ['show', 'focus', 'restore', 'hide'].forEach(event => {
+      mainWindow.on(event, () => {
+      if (hasTimedOut) {
+        contents.reload();
+        hasTimedOut = false;
+      }
+      });
+    });
+
+    contents.on('did-start-loading', () => {
+      hasTimedOut = false;
+    });
+  });
 
 
 
@@ -422,7 +466,7 @@ function createMainWindow() {
 
    // Handle refresh navigation
    ipcMain.on('navigate-home', () => {
-    mainWindow.webContents.send('navigateHomeActive');
+    mainWindow.webContents.send('navigateHomeReset');
   });
 
   // Handle CTRL + F to show the find bar
@@ -448,7 +492,25 @@ function createMainWindow() {
   ipcMain.on('close-find-bar', () => {
     mainWindow.webContents.send('close-find-bar');
   });
-
+  ipcMain.on('refreshActive', () => {
+    mainWindow.webContents.send('refreshActive');
+  });
+  ipcMain.on('quitApp', () => {
+    app.quit()
+  });
+  ipcMain.on('zoomInActive', () => {
+    mainWindow.webContents.send('zoomInActive');
+  });
+  ipcMain.on('zoomOutActive', () => {
+    mainWindow.webContents.send('zoomInActive');
+  });
+  ipcMain.on('zoomResetActive', () => {
+    mainWindow.webContents.send('zoomInActive');
+  });
+  ipcMain.on('restart-app', (eventß) => {
+    app.relaunch();
+    app.quit();
+  });
 
 
 
@@ -484,8 +546,65 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
 
 
 
-let toggleShortcut = 'Ctrl+Space';
+let shortcutToggleWindow = 'Ctrl+Space';
 let shortcutLock = 'Ctrl+Alt+L';
+let quitAppShortcut = 'Ctrl+Q';
+
+// Add this function to load shortcuts from config
+function loadShortcuts() {
+  try {
+    const configPath = os.platform() === 'darwin' 
+      ? path.join(os.homedir(), '.instant-cognition', 'config.json')
+      : path.join(__dirname, '../../config.json');
+    
+    let config = {};
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath));
+    }
+
+    // Load shortcuts with defaults if not found
+    shortcutToggleWindow = config.shortcuts?.toggleShortcut || shortcutToggleWindow;
+    shortcutLock = config.shortcuts?.shortcutLock || shortcutLock;
+
+    // Save defaults if they weren't in config
+    if (!config.shortcuts) {
+      config.shortcuts = {
+        toggleShortcut: shortcutToggleWindow,
+        shortcutLock
+      };
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
+    if (!config.shortcuts.toggleShortcut) {
+        config.shortcuts.toggleShortcut = shortcutToggleWindow
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
+    if (!config.shortcuts.shortcutLock) {
+      config.shortcuts.shortcutLock = shortcutLock
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
+  
+    
+  } catch (error) {
+    console.error('Error loading shortcuts:', error);
+    // Use defaults if loading fails
+    shortcutToggleWindow = shortcutToggleWindow;
+    shortcutLock = shortcutLock;
+  }
+}
+
+
+
+const toggleWindow = () => {
+  if (mainWindow.isVisible()) {
+    if (mainWindow.isFocused()) {
+    mainWindow.hide();
+    } else {
+    mainWindow.focus();
+    }
+  } else {
+    mainWindow.show();
+  }
+};
 
 
 
@@ -493,25 +612,18 @@ let shortcutsRegistered = false;
 let currentTimestampShortcut = Date.now();
 // Register a single global shortcut to toggle the window
 const registerToggleShortcut = () => {
-  globalShortcut.register(toggleShortcut, () => {
-    if (Date.now() - currentTimestampShortcut < 100) return;
+  globalShortcut.register(shortcutToggleWindow, () => {
+    if (Date.now() - currentTimestampShortcut < 50) return;
 
-    if (mainWindow.isVisible()) {
-      if (mainWindow.isFocused()) {
-        mainWindow.hide();
-      } else {
-        mainWindow.focus();
-      }
-    } else {
-      mainWindow.show();
-    }
+    toggleWindow();
+
     currentTimestampShortcut = Date.now();
   });
   shortcutsRegistered = true;
 };
 
 function unregisterToggleShortcut() {
-  globalShortcut.unregister(toggleShortcut);
+  globalShortcut.unregister(shortcutToggleWindow);
   shortcutsRegistered = false;
 }
 
@@ -546,6 +658,9 @@ const debounce = (func, wait) => {
 };
 
 app.whenReady().then(() => {
+
+  // Load shortcuts before registering them
+  loadShortcuts();
 
   // Optimize V8
   v8.setFlagsFromString('--max-old-space-size=4096');
@@ -738,7 +853,7 @@ app.whenReady().then(() => {
         {
           label: 'Home',
           click: () => {
-            mainWindow.webContents.send('navigateHomeActive');
+            mainWindow.webContents.send('navigateHomeReset');
         }},
         { type: 'separator' },
         {
@@ -789,8 +904,11 @@ app.whenReady().then(() => {
     },
     // add a seperator
     { type: 'separator' },
+    { label: 'Toggle Window', accelerator: shortcutToggleWindow, click: () => { toggleWindow(); } },
+    { type: 'separator' },
     {
-      label: 'Toggle Lock (Ctrl+Alt+L)',
+      label: 'Toggle Lock',
+      accelerator: shortcutLock,
       click: () => {
       if (toggleLocked) {
         toggleLocked = false;
@@ -802,8 +920,11 @@ app.whenReady().then(() => {
       }
     },
     { type: 'separator' },
+    { role: 'reload' },
+    { role: 'forcereload' },
+    { type: 'separator' },
     {
-      label: 'Reload',
+      label: 'Restart InstantCognition',
       click: () => {
         app.relaunch();
         app.quit();
@@ -811,6 +932,7 @@ app.whenReady().then(() => {
     },
     {
       label: 'Quit',
+      accelerator: quitAppShortcut,
       click: () => {
         app.quit();
       }
@@ -861,7 +983,7 @@ app.whenReady().then(() => {
       label: 'File',
       submenu: [
         {
-          label: 'Reload',
+          label: 'Restart App',
           click: () => {
             app.relaunch();
             app.quit();
@@ -869,10 +991,11 @@ app.whenReady().then(() => {
         },
         {
           label: 'Quit',
+          accelerator: quitAppShortcut,
           click: () => {
             app.quit();
           }
-        }
+        },
       ]
     },
     {
@@ -898,9 +1021,25 @@ app.whenReady().then(() => {
     {
       label: 'View',
       submenu: [
-        { role: 'zoomin', accelerator: 'CmdOrCtrl + =' },
-        { role: 'zoomout' },
-        { role: 'resetzoom' },
+        { label: 'Toggle Window', accelerator: shortcutToggleWindow, click: () => { toggleWindow(); } },
+        { type: 'separator' },
+        {
+          label: 'Toggle Lock',
+          accelerator: shortcutLock,
+          click: () => {
+          if (toggleLocked) {
+            toggleLocked = false;
+            registerToggleShortcut();
+          } else {
+            toggleLocked = true;
+            unregisterToggleShortcut();
+          }
+          }
+        },
+        { type: 'separator' },
+        { label: 'Zoom In', accelerator: 'CmdOrCtrl + =', click: () => { mainWindow.webContents.send('zoomInActive'); } },
+        { label: 'Zoom Out', accelerator: 'CmdOrCtrl + -', click: () => { mainWindow.webContents.send('zoomOutActive'); } },
+        { label: 'Zoom Reset', accelerator: 'CmdOrCtrl + 0', click: () => { mainWindow.webContents.send('zoomResetActive'); } },
         { type: 'separator' },
         { label: 'Reset View', click: () => { mainWindow.webContents.send('resetView'); } },
         { label: 'Toggle View', click: () => { mainWindow.webContents.send('toggleView'); } },
@@ -909,15 +1048,6 @@ app.whenReady().then(() => {
         { label: 'Toggle Cognitizer', click: () => { mainWindow.webContents.send('toggleCognitizerView'); } },
         { label: 'Toggle Browser', click: () => { mainWindow.webContents.send('toggleBrowserView'); } },
         { type: 'separator' },
-        { label: 'Toggle Lock (Ctrl+Alt+L)', click: () => {
-          if (toggleLocked) {
-            toggleLocked = false;
-            registerToggleShortcut();
-          } else {
-            toggleLocked = true;
-            unregisterToggleShortcut();
-          }
-        }},
         { role: 'togglefullscreen' },
         { role: 'toggledevtools' },
       ]
@@ -928,15 +1058,20 @@ app.whenReady().then(() => {
         { label: 'Back', accelerator: 'Alt+Left', click: () => { mainWindow.webContents.send('navigateBackActive'); } },
         { label: 'Forward', accelerator: 'Alt+Right', click: () => { mainWindow.webContents.send('navigateForwardActive'); } },
         { type: 'separator' },
-        { role: 'reload' },
-        { role: 'forcereload' },
+        {
+          label: 'Home',
+          click: () => {
+            mainWindow.webContents.send('navigateHomeReset');
+        }},
+        { type: 'separator' },
+        { label: 'Refresh', accelerator: 'CmdOrCtrl + R', click: () => { mainWindow.webContents.send('refreshActive'); } },
       ]
     },
     {
       label: 'Window',
       role: 'windowMenu',
       submenu: [
-        { label: 'Toggle Lock (Ctrl+Alt+L)', click: () => {
+        { label: 'Toggle Lock', accelerator: shortcutLock, click: () => {
           if (toggleLocked) {
             toggleLocked = false;
             registerToggleShortcut();
@@ -970,8 +1105,11 @@ app.whenReady().then(() => {
           }
         },
         { type: 'separator' },
+        { role: 'reload' },
+        { role: 'forcereload' },
+        { type: 'separator' },
         {
-          label: 'Reload InstantCognition',
+          label: 'Restart InstantCognition',
           click: () => {
             app.relaunch();
             app.quit();

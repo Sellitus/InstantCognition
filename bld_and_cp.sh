@@ -71,7 +71,14 @@ if [ "$architecture" != "arm" ] && [ "$architecture" != "x64" ]; then
 fi
 
 
+if [ "$platform" == "win" ]; then
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # Load nvm
 
+    nvm install --latest-npm
+
+    npm install -g npm-check-updates
+fi
 
 
 script_start_time=$(date +%s)

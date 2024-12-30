@@ -1,20 +1,20 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Expose IPC functionality safely to renderer
-contextBridge.exposeInMainWorld('ipc', {
-  send: (channel, data) => {
-    const validChannels = ['navigate-back', 'navigate-forward', 'close-find-bar'];
-    if (validChannels.includes(channel)) {
-      ipcRenderer.send(channel, data);
-    }
-  },
-  on: (channel, func) => {
-    const validChannels = ['open-url', 'toggleFindBar', 'close-find-bar', 'navigateBackActive', 'navigateForwardActive', 'refreshActive', 'navigateHomeActive'];
-    if (validChannels.includes(channel)) {
-      ipcRenderer.on(channel, (event, ...args) => func(...args));
-    }
-  }
-});
+// // Expose IPC functionality safely to renderer
+// contextBridge.exposeInMainWorld('ipc', {
+//   send: (channel, data) => {
+//     const validChannels = ['navigate-back', 'navigate-forward', 'close-find-bar', 'refreshActive'];
+//     if (validChannels.includes(channel)) {
+//       ipcRenderer.send(channel, data);
+//     }
+//   },
+//   on: (channel, func) => {
+//     const validChannels = ['open-url', 'toggleFindBar', 'close-find-bar', 'navigateBackActive', 'navigateForwardActive', 'refreshActive', 'navigateHomeReset'];
+//     if (validChannels.includes(channel)) {
+//       ipcRenderer.on(channel, (event, ...args) => func(...args));
+//     }
+//   }
+// });
 
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
@@ -24,13 +24,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   for (const type of ['chrome', 'node', 'electron']) {
     replaceText(`${type}-version`, process.versions[type]);
-  }
-
-  const webview = document.querySelector('webview');
-  if (webview) {
-    webview.addEventListener('focus', () => {
-      console.log('Webview focused');
-    });
   }
 });
 
@@ -172,5 +165,13 @@ window.addEventListener('gestureend', () => {
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     ipcRenderer.send('close-find-bar');
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r') {
+    event.preventDefault();
+    ipcRenderer.send('refreshActive');
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'q') {
+    event.preventDefault();
+    ipcRenderer.send('quitApp');
   }
 });

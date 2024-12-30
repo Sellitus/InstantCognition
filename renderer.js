@@ -24,6 +24,9 @@ let baseUrls = {
   custom15: {"name": "Google", "url": "https://www.google.com/"},
 };
 
+let toggleShortcut = 'Ctrl+Space';
+let shortcutLock = 'Ctrl+Alt+L';
+
 let activeCognitizers = {};
 let currentCognitizerId = '';
 
@@ -140,7 +143,7 @@ function selectWebview(cognitizerId) {
   hideAllWebviews('#cognitizer-container');
   showWebview(cognitizerId);
 
-  config.state.selectedCognitizer = cognitizerId;
+  config.state.selectedCognitizers.push(cognitizerId);
   saveSettings(config);
 
   focusWebview(cognitizerId);
@@ -202,6 +205,11 @@ ipcRenderer.on('refreshActive', (event, message) => {
 });
 
 
+ipcRenderer.on('navigateHomeReset', (event, message) => {
+  navigateHomeReset();
+});
+
+
 ipcRenderer.on('navigateHomeActive', (event, message) => {
   navigateHomeActive();
 });
@@ -245,6 +253,14 @@ ipcRenderer.on('toggleBrowserView', (event, message) => {
 ipcRenderer.on('resetView', (event, message) => {
   resetView();
 });
+
+
+
+
+function restartApp() {
+  // Call function restart-app in index.js
+  ipcRenderer.send('restart-app');
+}
 
 
 
@@ -406,6 +422,12 @@ function selectCognitizer(newCognitizerId, toggle_override=false) {
     document.getElementById(newCognitizerId).style.display = 'none';
     document.getElementById(`${newCognitizerId}button`).classList.remove('selected');
     
+    // Update selected cognitizers in state
+    const index = config.state.selectedCognitizers.indexOf(newCognitizerId);
+    if (index > -1) {
+      config.state.selectedCognitizers.splice(index, 1);
+    }
+    
     const activeCount = Object.values(activeCognitizers).filter(Boolean).length;
     
     if (activeCount === 0) {
@@ -416,6 +438,9 @@ function selectCognitizer(newCognitizerId, toggle_override=false) {
     } else {
       updateCognitizersLayout();
     }
+
+    config.state.selectedCognitizers = config.state.selectedCognitizers.filter(id => id !== newCognitizerId);
+    saveSettings(config);
 
     currentCognitizerId = newCognitizerId;
     
@@ -442,6 +467,9 @@ function showAndInitializeCognitizer(newCognitizerId) {
     Object.keys(activeCognitizers).forEach(key => {
       activeCognitizers[key] = false;
     });
+    config.state.selectedCognitizers = [newCognitizerId];
+  } else if (!config.state.selectedCognitizers.includes(newCognitizerId)) {
+    config.state.selectedCognitizers.push(newCognitizerId);
   }
   
   currentCognitizerId = newCognitizerId;
@@ -487,7 +515,6 @@ function showAndInitializeCognitizer(newCognitizerId) {
     updateCognitizersLayout();
   }
 
-  config.state.selectedCognitizer = currentCognitizerId;
   saveSettings(config);
 
   pauseInactiveResumeActiveCognitizer();
@@ -651,6 +678,7 @@ function navigateHomeBrowser() {
 
 
 
+
 function pauseInactiveCognitizers() {
   try {
       let webviews = document.querySelectorAll('.cognitizer-browser.inactive');
@@ -712,14 +740,6 @@ let sideBar = document.getElementById('side-bar');
 let menuContent = document.querySelector('.menu-content');
 
 sideBar.addEventListener('mouseleave', (event) => {
-  // Check if the cursor has left the sidebar and its contents
-  if (!sideBar.contains(event.relatedTarget)) {
-    collapseMenu();
-  }
-  // let activeWebview = document.querySelector('.cognitizer-browser.active');
-  // focusWebview(currentCognitizerId);
-});
-menuContent.addEventListener('mouseleave', (event) => {
   // Check if the cursor has left the sidebar and its contents
   if (!sideBar.contains(event.relatedTarget)) {
     collapseMenu();
@@ -972,7 +992,20 @@ function loadSettings() {
     let enableDefaultCognitizerCheckbox = document.getElementById('enableDefaultCognitizer');
     let defaultCognitizerSelect = document.getElementById('defaultCognitizerSelect');
 
+    // Load shortcuts with defaults if not found
     // Initialize settings if they don't exist
+    if (!loadedConfig.settings) {
+      loadedConfig.settings = {};
+    }
+    if (!loadedConfig.settings.shortcuts) {
+      loadedConfig.settings.shortcuts = {toggleShortcut, shortcutLock};
+    }
+    if (!loadedConfig.settings.shortcuts.toggleShortcut) {
+      loadedConfig.settings.shortcuts.toggleShortcut = toggleShortcut;
+    }
+    if (!loadedConfig.settings.shortcuts.shortcutLock) {
+      loadedConfig.settings.shortcuts.shortcutLock = shortcutLock;
+    }
     if (!loadedConfig.settings.preventMenuExpansion) {
       loadedConfig.settings.preventMenuExpansion = false;
     }
@@ -994,17 +1027,23 @@ function loadSettings() {
     if(!loadedConfig.settings.browserHomeUrl) {
       loadedConfig.settings.browserHomeUrl = 'https://www.google.com/';
     }
+    // Add multicognition to default settings
+    if (loadedConfig.settings.multicognition === undefined) {
+      loadedConfig.settings.multicognition = false;
+    }
     if (!loadedConfig.state) {
       loadedConfig.state = {};
-    }
-    if (!loadedConfig.state.selectedCognitizer) {
-      loadedConfig.state.selectedCognitizer = defaultCognitizer;
     }
     if (!loadedConfig.state.windowBounds) {
       loadedConfig.state.windowBounds = { width: 1600, height: 900 };
     }
     if (!loadedConfig.baseUrls) {
       loadedConfig.baseUrls = baseUrls;
+    }
+
+    // Initialize selectedCognitizers array if it doesn't exist
+    if (!loadedConfig.state.selectedCognitizers) {
+      loadedConfig.state.selectedCognitizers = [defaultCognitizer];
     }
 
     // If loadedConfig.baseUrls is a list, convert it to an object with 'custom1', 'custom2', etc. as keys
@@ -1039,24 +1078,33 @@ function loadSettings() {
       openLinkExternal = true;
     }
     
+    // Restore multicognition state
+    multiCognition = loadedConfig.settings.multicognition;
+    if (multiCognition) {
+      document.getElementById('toggle-multi-cognition').classList.add('selected');
+    }
+
     saveSettings(loadedConfig);
 
     return loadedConfig;
   } catch (error) {
-    console.error('Error loading settings:', error);
+    console.log('Error loading settings:', error);
+    console.log('Resetting the config.json to default settings');
     // Return default settings
     return {
       settings: {
+        shortcuts: {toggleShortcut, shortcutLock},
         preventMenuExpansion: false,
         enableAdblocker: false,
         launchAtStartup: false,
         enableDefaultCognitizer: false,
         defaultCognitizer: 'custom1',
         openLinkExternal: false,
-        browserHomeUrl: 'https://www.google.com/'
+        browserHomeUrl: 'https://www.google.com/',
+        multicognition: false
       },
       state: {
-        selectedCognitizer: defaultCognitizer,
+        selectedCognitizers: [defaultCognitizer],
         windowBounds: { width: 1600, height: 900 }
       },
       baseUrls: baseUrls
@@ -1173,12 +1221,58 @@ function refreshActive() {
   }
 }
 
-function navigateHomeActive() {
-  if (lastBrowserInteraction > lastCognitizerInteraction) {
-    navigateHomeBrowser();
-  } else {
-    navigateHomeCognitizer();
+
+
+function zoomInActive() {
+  const activeWebview = getActiveWebview();
+  if (activeWebview) {
+    activeWebview.setZoomLevel((activeWebview.getZoomLevel() || 0) + 0.5);
   }
+}
+
+function zoomOutActive() {
+  const activeWebview = getActiveWebview();
+  if (activeWebview) {
+    activeWebview.setZoomLevel((activeWebview.getZoomLevel() || 0) - 0.5);
+  }
+}
+
+function zoomResetActive() {
+  const activeWebview = getActiveWebview();
+  if (activeWebview) {
+    activeWebview.setZoomLevel(0);
+  }
+}
+
+function navigateHomeReset() {
+  let activeWebview = getActiveWebview();
+  if (activeWebview) {
+    let cognitizerId = activeWebview.id;
+    // Create a new webview instance
+    let newWebview = document.createElement('webview');
+    newWebview.id = cognitizerId;
+    newWebview.classList.add('cognitizer-browser');
+    newWebview.classList.add('active');
+    newWebview.classList.remove('inactive');
+    newWebview.src = config.baseUrls[getIndexFromId(cognitizerId)]['url'];
+    newWebview.preload = path.join(__dirname, 'preload.js');
+
+    // Replace the last webview instance
+    let browserContainer = document.getElementById('cognitizer-container');
+    browserContainer.replaceChild(newWebview, activeWebview);
+
+    focusWebview(cognitizerId);
+  }
+}
+
+
+
+function navigateHomeActive() {
+  let activeWebview = getActiveWebview();
+  let cognitizerId = activeWebview.id;
+  newWebview.src = config.baseUrls[getIndexFromId(cognitizerId)]['url'];
+
+  focusWebview(cognitizerId);
 }
 
 
@@ -1236,17 +1330,47 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeGestureHandling();
 
   selectURL(config.browserHomeUrl);
-  try {
-    selectCognitizer(config.state.selectedCognitizer);
-  } catch (error) {
-    console.error('Error selecting cognitizer: ', error);
-    selectCognitizer('custom1');
+
+  // Initialize cognitizers from saved state
+  if (config.state.selectedCognitizers && config.state.selectedCognitizers.length > 0) {
+    if (config.state.selectedCognitizers.length > 1) {
+      multiCognition = true;
+      document.getElementById('toggle-multi-cognition').classList.add('selected');
+      config.settings.multicognition = true;
+    }
+    
+    // Reset any existing active cognitizers
+    Object.keys(activeCognitizers).forEach(key => {
+      activeCognitizers[key] = false;
+    });
+    
+    // Load all saved cognitizers
+    config.state.selectedCognitizers.forEach((cognizerId, index) => {
+      if (index === config.state.selectedCognitizers.length - 1) {
+        // For the last cognitizer, set it as current
+        currentCognitizerId = cognizerId;
+      }
+      selectCognitizer(cognizerId, true);
+    });
+
+    // Update layout if in multi-cognition mode
+    if (multiCognition) {
+      updateCognitizersLayout();
+    }
+  } else {
+    selectCognitizer('custom1', true);
   }
 
   // Initialize the collapsed menu icons
   let options = document.querySelectorAll('.dropdown-section > div');
   setCollapsedMenuIcons(options);
   initializeCheckboxes();
+
+  const openConfigButton = document.getElementById('open-config-button');
+
+  openConfigButton.addEventListener('click', () => {
+    ipcRenderer.send('open-config-file');
+  });
 });
 
 
@@ -1265,7 +1389,7 @@ ipcRenderer.on('navigate-refresh', () => {
 });
 
 ipcRenderer.on('navigate-home', () => {
-  navigateHomeActive();
+  navigateHomeReset();
 });
 
 ipcRenderer.on('closeBrowser', () => {
@@ -1279,6 +1403,16 @@ ipcRenderer.on('toggleView', () => {
 
 ipcRenderer.on('resetView', () => {
   resetView();
+});
+
+ipcRenderer.on('zoomInActive', () => {
+  zoomInActive();
+});
+ipcRenderer.on('zoomOutActive', () => {
+  zoomOutActive();
+});
+ipcRenderer.on('zoomResetActive', () => {
+  zoomResetActive();
 });
 
 
@@ -1304,6 +1438,10 @@ let findInPageRequestId = 0;
 
 function toggleMultiCognition() {
   multiCognition = !multiCognition;
+
+  // Save multicognition state to config
+  config.settings.multicognition = multiCognition;
+  saveSettings(config);
 
   if (multiCognition) {
     document.getElementById(`toggle-multi-cognition`).classList.add('selected');

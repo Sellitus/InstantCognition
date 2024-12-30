@@ -74,8 +74,7 @@ else
 
     npm install npm@latest
 
-    nvm install 22
-    nvm use 22
+    nvm install --latest-npm
 
     npm install -g npm-check-updates
 
