@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="main.combined.css">
   <meta charset="UTF-8">
   <title>InstantCognition</title>
 </head>
@@ -87,87 +87,23 @@
     </div>
   </div>
   <div id="cognitizer-container">
-    <webview id="custom1" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom2" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom3" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom4" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom5" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom6" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom7" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom8" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom9" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom10" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom11" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom12" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom13" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom14" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom15" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom16" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom17" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom18" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom19" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom20" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom21" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom22" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom23" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom24" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom25" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom26" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom27" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom28" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom29" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom30" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom31" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom32" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom33" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom34" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom35" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom36" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom37" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom38" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom39" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom40" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom40" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom41" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom42" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom43" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom44" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom45" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom46" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom47" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom48" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom49" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
-    <webview id="custom50" class="cognitizer-browser" preload="./preload.js" tabindex="0"></webview>
+    <!-- Webviews are dynamically created by JavaScript -->
   </div>
   <div id="browser-container">
-    <webview id="browser-webview" class="web-browser" src="https://www.google.com/" preload="./preload.js" tabindex="0"></webview>
+    <webview id="browser-webview" class="web-browser" src="https://www.google.com/" preload="./main/preload.js" tabindex="0"></webview>
   </div>
   <script src="renderer.js"></script>
-<div id="fullscreen-menu">
-  <div class="settings-header">
-    <h3>Settings</h3>
-    <button id="close-button">✖</button>
-  </div>
-  <div class="setting-option">
-    <input onclick="changeSetting(this.checked, 'preventMenuExpansion')" type="checkbox" id="preventMenuExpansion" class="checkboxes"><label for="preventMenuExpansion">Prevent Menu Expansion</label>
-  </div>
-  <div class="setting-option">
-    <input onclick="changeSetting(this.checked, 'enableAdblocker')" type="checkbox" id="enableAdblocker" class="checkboxes"><label for="enableAdblocker">Enable Ad Blocker</label>
-  </div>
-  <div class="setting-option">
-    <input onclick="changeSetting(this.checked, 'launchAtStartup')" type="checkbox" id="launchAtStartup" class="checkboxes"><label for="launchAtStartup">Launch at OS Startup</label>
-  </div>
-  <div class="setting-option">
-    <button id="open-config-button" onclick="openConfig()">Open Settings Config File</button>
-  </div>
-  <div class="setting-option">
-    <button id="restart-app-button" onclick="restartApp()">Restart App to Apply Settings</button>
-  </div>
-  <!-- <div class="setting-option">
-    <input onclick="changeSetting(this.checked, 'setting4')" type="checkbox" id="setting4" class="checkboxes"><label for="setting4">Setting 4</label>
-  </div> -->
-  <!-- <div class="setting-option" id="debug" style="display: none;">Debug</div> -->
-</div>
+  <!-- Add smooth page load animation -->
+  <style>
+    body {
+      opacity: 0;
+      animation: fadeIn 300ms ease-out forwards;
+      animation-delay: 50ms;
+    }
+  </style>
+<!-- Settings menu is now dynamically created by SettingsMenu component -->
+<div id="fullscreen-menu" style="display:none;">
+  <!-- Settings content will be dynamically added here -->
 </div>
 </body>
 </html>

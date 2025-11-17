@@ -1,0 +1,390 @@
+/* Global Animation Styles */
+
+/* Disable animations when preference is set */
+body.no-animations * {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+/* Page Load Animations */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Micro-interactions */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-container) 0%,
+    var(--surface-container-high) 50%,
+    var(--surface-container) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--surface-container-high);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Progress Animations */
+@keyframes progress {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--surface-container-high);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--primary);
+  transform-origin: left;
+  animation: progress 2s ease-out;
+}
+
+/* Notification Animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.notification-enter {
+  animation: slideDown 300ms ease-out;
+}
+
+.notification-exit {
+  animation: slideUp 300ms ease-in;
+}
+
+/* Skeleton Loading */
+@keyframes skeleton {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.skeleton {
+  background: var(--surface-container-high);
+  border-radius: 4px;
+  animation: skeleton 1.5s ease-in-out infinite;
+}
+
+/* Focus Animations */
+@keyframes focusRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 100, 147, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(0, 100, 147, 0.1);
+  }
+}
+
+*:focus {
+  animation: focusRing 200ms ease-out;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hover-grow {
+  transition: transform 200ms ease;
+}
+
+.hover-grow:hover {
+  transform: scale(1.05);
+}
+
+.hover-brightness {
+  transition: filter 200ms ease;
+}
+
+.hover-brightness:hover {
+  filter: brightness(1.1);
+}
+
+/* Click Effects */
+.click-scale {
+  transition: transform 100ms ease;
+}
+
+.click-scale:active {
+  transform: scale(0.95);
+}
+
+/* Page Transitions */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pageExit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.page-enter {
+  animation: pageEnter 300ms ease-out;
+}
+
+.page-exit {
+  animation: pageExit 300ms ease-in;
+}
+
+/* Stagger Animations */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideInFromBottom 300ms ease-out forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 50ms; }
+.stagger-item:nth-child(2) { animation-delay: 100ms; }
+.stagger-item:nth-child(3) { animation-delay: 150ms; }
+.stagger-item:nth-child(4) { animation-delay: 200ms; }
+.stagger-item:nth-child(5) { animation-delay: 250ms; }
+.stagger-item:nth-child(6) { animation-delay: 300ms; }
+.stagger-item:nth-child(7) { animation-delay: 350ms; }
+.stagger-item:nth-child(8) { animation-delay: 400ms; }
+.stagger-item:nth-child(9) { animation-delay: 450ms; }
+.stagger-item:nth-child(10) { animation-delay: 500ms; }
+
+/* Transition Classes */
+.transition-all {
+  transition: all 200ms ease;
+}
+
+.transition-colors {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.transition-transform {
+  transition: transform 200ms ease;
+}
+
+.transition-opacity {
+  transition: opacity 200ms ease;
+}
+
+/* Easing Functions */
+.ease-in-out-cubic {
+  transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.ease-out-expo {
+  transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.ease-out-back {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Spring Animations */
+@keyframes spring {
+  0% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.2);
+  }
+  20% {
+    transform: scale(0.9);
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  40% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  70% {
+    transform: scale(1.02);
+  }
+  80% {
+    transform: scale(0.99);
+  }
+  90% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.spring-bounce {
+  animation: spring 800ms ease-out;
+}

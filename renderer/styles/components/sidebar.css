@@ -1,0 +1,270 @@
+/* Sidebar Component Styles */
+
+#side-bar {
+  position: relative;
+  background: linear-gradient(180deg, var(--surface-container) 0%, var(--surface-container-low) 100%);
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+#side-bar.animating {
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#side-bar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, 
+    transparent 0%, 
+    var(--divider-color) 20%, 
+    var(--divider-color) 80%, 
+    transparent 100%);
+}
+
+/* Toggle Button */
+#toggle-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 200ms ease;
+}
+
+#toggle-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#toggle-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Menu Content */
+.menu-content {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 200ms ease;
+  -webkit-mask-image: linear-gradient(to bottom, 
+    transparent 0%, 
+    black 10px, 
+    black calc(100% - 10px), 
+    transparent 100%);
+  mask-image: linear-gradient(to bottom, 
+    transparent 0%, 
+    black 10px, 
+    black calc(100% - 10px), 
+    transparent 100%);
+}
+
+/* Dropdown Sections */
+.dropdown-section {
+  animation: fadeInSlide 300ms ease forwards;
+  opacity: 1;
+}
+
+.dropdown-section:nth-child(1) { animation-delay: 50ms; }
+.dropdown-section:nth-child(2) { animation-delay: 100ms; }
+.dropdown-section:nth-child(3) { animation-delay: 150ms; }
+.dropdown-section:nth-child(4) { animation-delay: 200ms; }
+.dropdown-section:nth-child(5) { animation-delay: 250ms; }
+.dropdown-section:nth-child(6) { animation-delay: 300ms; }
+
+@keyframes fadeInSlide {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Menu Items */
+.dropdown-section > div {
+  position: relative;
+  overflow: hidden;
+  transition: all 150ms ease;
+  transform: scale(1);
+}
+
+.dropdown-section > div:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+
+.dropdown-section > div:active {
+  transform: scale(0.98);
+}
+
+.dropdown-section > div.selected {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  box-shadow: 0 2px 8px rgba(0, 100, 147, 0.3);
+}
+
+.dropdown-section > div.selected:hover {
+  box-shadow: 0 4px 16px rgba(0, 100, 147, 0.4);
+}
+
+/* Ripple Effect */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.ripple.animate {
+  animation: rippleEffect 600ms ease-out;
+}
+
+@keyframes rippleEffect {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Cognitizer Section */
+.cognitizer-dropdown-section {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px; /* Keep original padding for proper icon sizing */
+}
+
+/* Ultra-thin scrollbar styling */
+.cognitizer-dropdown-section::-webkit-scrollbar {
+  width: 1px; /* Extremely thin scrollbar */
+}
+
+.cognitizer-dropdown-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cognitizer-dropdown-section::-webkit-scrollbar-thumb {
+  background: var(--surface-container-highest);
+  border-radius: 1px;
+}
+
+.cognitizer-dropdown-section::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Focus state for keyboard navigation */
+.cognitizer-dropdown-section:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Visual feedback when scrolling */
+.cognitizer-dropdown-section.scrolling::-webkit-scrollbar-thumb {
+  background: var(--primary);
+}
+
+/* Drag and Drop */
+.cognitizer-dropdown-section > div.dragging {
+  opacity: 0.5;
+  cursor: move;
+}
+
+.cognitizer-dropdown-section > div.dragging-over {
+  border-top: 2px solid var(--primary);
+}
+
+/* Tooltips */
+.sidebar-tooltip {
+  position: fixed;
+  background: var(--surface-container-highest);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 150ms ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+}
+
+.sidebar-tooltip.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Highlight Animation */
+.dropdown-section > div.highlight {
+  animation: highlightPulse 1s ease;
+}
+
+@keyframes highlightPulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 100, 147, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 100, 147, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 100, 147, 0); }
+}
+
+/* Logo Animations */
+.collapsed-menu-logo,
+.collapsed-menu-logo-long,
+.collapsed-menu-logo-instant-cognition {
+  transition: transform 200ms ease;
+}
+
+#toggle-button:hover .collapsed-menu-logo-instant-cognition {
+  transform: rotate(5deg) scale(1.1);
+}
+
+/* Expanded State Text */
+.settings-text {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive Adjustments */
+@media (max-height: 600px) {
+  .dropdown-section > div {
+    height: 1.6vh;
+    min-height: 12px;
+    max-height: 18px;
+    font-size: clamp(12px, 1vh, 16px);
+  }
+}
+
+/* Smooth Scrolling */
+.menu-content {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+/* Section Dividers */
+.dropdown-section:not(:last-child)::after {
+  transition: opacity 200ms ease;
+}
+
+#side-bar.expanded .dropdown-section:not(:last-child)::after {
+  opacity: 1;
+}
+
+#side-bar:not(.expanded) .dropdown-section:not(:last-child)::after {
+  opacity: 0.5;
+}
+
+/* Icon Transitions */
+.dropdown-section > div img {
+  transition: all 200ms ease;
+  filter: brightness(0.9);
+}
+
+.dropdown-section > div:hover img {
+  filter: brightness(1.1);
+  transform: scale(1.1);
+}
+
+.dropdown-section > div.selected img {
+  filter: brightness(1.2);
+}

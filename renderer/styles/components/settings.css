@@ -1,0 +1,688 @@
+/* Settings Menu Component Styles */
+
+.settings-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease-in-out, visibility 200ms ease-in-out;
+  z-index: 10000;
+  will-change: opacity;
+}
+
+.settings-menu.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Settings container */
+.settings-menu .settings-container {
+  background: var(--surface-container);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  height: 600px; /* Fixed height to prevent size changes */
+  min-height: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    0 1px 4px rgba(0, 0, 0, 0.1);
+  transform: translateZ(0); /* Force GPU acceleration */
+  overflow: hidden;
+  backface-visibility: hidden; /* Improve rendering performance */
+  transition: transform 200ms ease-in-out;
+}
+
+.settings-menu.visible .settings-container {
+  transform: translateZ(0);
+}
+
+/* Settings Header */
+.settings-menu .settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--divider-color);
+  background: var(--surface-container-high);
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0; /* Prevent header from shrinking */
+  height: 64px; /* Fixed height */
+}
+
+.settings-menu .settings-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-menu .close-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-menu .close-button:hover {
+  background: var(--surface-container-highest);
+}
+
+/* Tabs */
+.settings-menu .settings-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--surface-container);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--divider-color);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0; /* Prevent tabs from shrinking */
+}
+
+.settings-menu .settings-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-menu .tab-button {
+  padding: 16px 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.settings-menu .tab-button:hover {
+  color: var(--text-primary);
+  background: var(--surface-container-high);
+}
+
+.settings-menu .tab-button.active {
+  color: var(--primary);
+}
+
+.settings-menu .tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+}
+
+/* Tab Content */
+.settings-menu .settings-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 40px;
+  max-width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.settings-menu .tab-content {
+  display: none;
+}
+
+.settings-menu .tab-content.active {
+  display: block;
+}
+
+/* Settings Sections */
+.settings-menu .settings-section {
+  margin-bottom: 32px;
+  max-width: 600px;
+}
+
+.settings-menu .settings-section h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+/* Setting Options */
+.settings-menu .setting-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 0 -12px;
+  transition: background-color 150ms ease;
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+.settings-menu .setting-option:hover {
+  background: var(--surface-container-high);
+}
+
+/* Checkbox/radio options */
+.settings-menu .setting-option label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+}
+
+.settings-menu .setting-option label span {
+  margin-left: 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Options with text inputs on the right */
+.settings-menu .setting-option > span:first-child:not(:last-child) {
+  flex: 0 0 auto;
+  margin-right: 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.settings-menu .setting-option input[type="checkbox"],
+.settings-menu .setting-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+/* Text Inputs */
+.settings-menu .text-input,
+.settings-menu .select-input {
+  flex: 0 1 250px;
+  max-width: 250px;
+  min-width: 150px;
+  padding: 8px 12px;
+  background: var(--surface-container-high);
+  border: 1px solid var(--divider-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  margin-left: auto;
+}
+
+.settings-menu .text-input:focus,
+.settings-menu .select-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 100, 147, 0.2);
+}
+
+/* Action Buttons */
+.settings-menu .settings-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.settings-menu .action-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  background: var(--primary);
+  color: white;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
+}
+
+.settings-menu .action-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.settings-menu .action-button:active {
+  background-color: var(--primary-active);
+}
+
+.settings-menu .action-button.secondary {
+  background: var(--surface-container-high);
+  color: var(--text-primary);
+}
+
+.settings-menu .action-button.secondary:hover {
+  background: var(--surface-container-highest);
+}
+
+/* Shortcuts Tab */
+.settings-menu .shortcuts-header {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.settings-menu .search-input {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--surface-container-high);
+  border: 1px solid var(--divider-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.settings-menu .search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.settings-menu .search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 100, 147, 0.2);
+}
+
+/* Shortcuts List */
+.settings-menu .shortcuts-list {
+  height: calc(100% - 60px); /* Fixed height relative to container */
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.settings-menu .shortcut-category {
+  margin-bottom: 24px;
+}
+
+.settings-menu .shortcut-category h3 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+
+.settings-menu .shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface-container-high);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background-color 150ms ease;
+}
+
+.settings-menu .shortcut-item:hover {
+  background: var(--surface-container-highest);
+}
+
+.settings-menu .shortcut-item.editing {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.settings-menu .shortcut-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-menu .shortcut-description {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.settings-menu .shortcut-modified {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.settings-menu .shortcut-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-menu .shortcut-key {
+  padding: 4px 12px;
+  background: var(--surface-container);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  min-width: 100px;
+  text-align: center;
+}
+
+.settings-menu .shortcut-key.recording {
+  background: var(--primary);
+  color: white;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.settings-menu .shortcut-edit,
+.settings-menu .shortcut-reset {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  background: var(--surface-container);
+  color: var(--text-primary);
+}
+
+.settings-menu .shortcut-edit:hover,
+.settings-menu .shortcut-reset:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.settings-menu .shortcut-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-menu .shortcut-reset:disabled:hover {
+  background: var(--surface-container);
+  color: var(--text-primary);
+}
+
+/* Cognitizers Tab */
+.settings-menu .cognitizers-info {
+  padding: 16px;
+  background: var(--surface-container-high);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.settings-menu .cognitizers-info p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.settings-menu .cognitizers-list {
+  margin-bottom: 24px;
+}
+
+.settings-menu .cognitizer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface-container-high);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background-color 150ms ease;
+}
+
+.settings-menu .cognitizer-item:hover {
+  background: var(--surface-container-highest);
+}
+
+.settings-menu .cognitizer-sort-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-menu .cognitizer-move-up,
+.settings-menu .cognitizer-move-down {
+  padding: 4px 8px;
+  border: 1px solid var(--divider-color);
+  background: var(--surface-container);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.settings-menu .cognitizer-move-up:hover,
+.settings-menu .cognitizer-move-down:hover {
+  background: var(--surface-container-highest);
+  color: var(--text-primary);
+  border-color: var(--primary);
+}
+
+.settings-menu .cognitizer-move-up:disabled,
+.settings-menu .cognitizer-move-down:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-menu .cognitizer-info {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+}
+
+.settings-menu .cognitizer-name,
+.settings-menu .cognitizer-url {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--surface-container);
+  border: 1px solid var(--divider-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.settings-menu .cognitizer-name:focus,
+.settings-menu .cognitizer-url:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.settings-menu .cognitizer-remove {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-container);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.settings-menu .cognitizer-remove:hover {
+  background: var(--error);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Cognitizers Actions */
+.settings-menu .cognitizers-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Appearance Tab */
+.settings-menu input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: var(--surface-container-high);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  margin: 12px 0;
+}
+
+.settings-menu input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.settings-menu input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 100, 147, 0.3);
+}
+
+/* Confirm Dialog */
+.confirm-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+
+.confirm-content {
+  background: var(--surface-container);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.confirm-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.confirm-content p {
+  margin: 0 0 24px 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 32px;
+  font-size: 14px;
+}
+
+/* Scrollbar Styling */
+.settings-menu .settings-content::-webkit-scrollbar,
+.settings-menu .shortcuts-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-menu .settings-content::-webkit-scrollbar-track,
+.settings-menu .shortcuts-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-menu .settings-content::-webkit-scrollbar-thumb,
+.settings-menu .shortcuts-list::-webkit-scrollbar-thumb {
+  background: var(--surface-container-highest);
+  border-radius: 4px;
+}
+
+.settings-menu .settings-content::-webkit-scrollbar-thumb:hover,
+.settings-menu .shortcuts-list::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Ensure body doesn't scroll when settings menu is open */
+body.settings-open {
+  overflow: hidden;
+}
+
+/* Recording shortcut state */
+body.recording-shortcut {
+  cursor: crosshair;
+}
+
+body.recording-shortcut * {
+  pointer-events: none !important;
+}
+
+body.recording-shortcut .shortcut-item.editing {
+  pointer-events: auto !important;
+}
+
+body.recording-shortcut .shortcut-item.editing .shortcut-key {
+  pointer-events: auto !important;
+}
+
+/* Shortcut input capture styling */
+.shortcut-input-capture {
+  padding: 4px 12px;
+  background: var(--primary) !important;
+  color: white !important;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  min-width: 100px;
+  text-align: center;
+  border: 2px solid var(--primary);
+  outline: none;
+  animation: pulse 1s infinite;
+}
+
+.shortcut-input-capture::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+/* Performance-focused overrides */
+.settings-menu .settings-container {
+  will-change: transform;
+}
+
+/* Reduce motion if user prefers */
+@media (prefers-reduced-motion: reduce) {
+  .settings-menu,
+  .settings-menu .settings-container,
+  .settings-menu .close-button,
+  .settings-menu .tab-button.active::after,
+  .settings-menu .action-button,
+  .settings-menu .shortcut-item,
+  .settings-menu .shortcut-key.recording,
+  .settings-menu .cognitizer-item,
+  .settings-menu .cognitizer-remove,
+  .settings-menu input[type="range"]::-webkit-slider-thumb {
+    transition: none !important;
+    animation: none !important;
+  }
+}

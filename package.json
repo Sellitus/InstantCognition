@@ -2,45 +2,140 @@
   "name": "instant-cognition",
   "version": "1.6.2",
   "description": "A cross-platform app to research information quickly after a press of the hotkey.",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "package-mac-arm": "electron-packager . InstantCognition --platform=darwin --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/mac-arm --copy-files",
-    "package-mac-x64": "electron-packager . InstantCognition --platform=darwin --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/mac-x64 --copy-files",
-    "package-win-arm": "electron-packager . InstantCognition --platform=win32 --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/win-arm --copy-files",
-    "package-win-x64": "electron-packager . InstantCognition --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/win-x64 --copy-files",
-    "package-lin-arm": "electron-packager . InstantCognition --platform=linux --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/lin-arm --copy-files",
-    "package-lin-x64": "electron-packager . InstantCognition --platform=linux --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/lin-x64 --copy-files",
-    "build-mac-arm": "electron-builder --mac --arm64",
-    "build-mac-x64": "electron-builder --mac --x64",
-    "debug": "node index.js --web"
+    "package-mac-arm": "electron-packager . InstantCognition --platform=darwin --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/mac-arm --asar=false --copy-files",
+    "package-mac-x64": "electron-packager . InstantCognition --platform=darwin --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/mac-x64 --asar=false --copy-files",
+    "package-win-arm": "electron-packager . InstantCognition --platform=win32 --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/win-arm --asar=false --copy-files",
+    "package-win-x64": "electron-packager . InstantCognition --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/win-x64 --asar=false --copy-files",
+    "package-lin-arm": "electron-packager . InstantCognition --platform=linux --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/lin-arm --asar=false --copy-files",
+    "package-lin-x64": "electron-packager . InstantCognition --platform=linux --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/lin-x64 --asar=false --copy-files",
+    "build-mac-x64": "electron-builder --mac --x64 && pkg updater.js --target node18-macos-x64 --output dist/updater-mac",
+    "build-mac-arm": "electron-builder --mac --arm64 && pkg updater.js --target node18-macos-arm64 --output dist/updater-mac-arm64",
+    "build-win-portable": "electron-builder --win portable && pkg updater.js --target node18-win-x64 --output dist/updater.exe && pkg updater.js --target node18-win-arm64 --output dist/updater-arm64.exe",
+    "debug": "electron . --inspect",
+    "test": "jest tests/unit/main/utils/ --runInBand --forceExit",
+    "test:all": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=\"tests/.*\\.test\\.(js|ts)\"",
+    "test:integration": "jest --testPathPattern=\"tests/integration/.*\\.test\\.(js|ts)\"",
+    "test:e2e": "jest --testPathPattern=\"tests/e2e/.*\\.test\\.(js|ts)\"",
+    "build:ts": "tsc --noEmit",
+    "build:test": "electron-builder --dir --config.asar=false",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "typecheck": "tsc --noEmit",
+    "test:security": "npm audit && eslint . --ext .js,.jsx,.ts,.tsx",
+    "test:memory": "jest --testPathPattern=\"tests/performance/.*\\.test\\.(js|ts)\" --detectLeaks",
+    "prepare": "husky install",
+    "fix": "npm run lint:fix && npm run prettier:fix",
+    "prettier:fix": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "precommit:fix": "lint-staged --allow-empty",
+    "verify": "npm run typecheck && npm run lint && npm test",
+    "verify:fix": "npm run fix && npm run verify",
+    "clean": "rm -rf builds dist out node_modules package-lock.json",
+    "reset": "npm run clean && npm install --legacy-peer-deps",
+    "build:fixed": "bash bld_and_cp_fixed.sh"
   },
   "build": {
     "productName": "InstantCognition",
     "appId": "sellitus.net.instantcognition",
     "asar": true,
+    "files": [
+      "main.js",
+      "main.css",
+      "main.combined.css",
+      "renderer.js",
+      "index.html",
+      "preload.js",
+      "assets/",
+      "renderer/",
+      "docs/",
+      "main/**/*",
+      "config.json",
+      "updater.js",
+      "!**/*.test.js",
+      "!tests/**/*"
+    ],
     "win": {
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
     },
+    "portable": {
+      "artifactName": "InstantCognition-Portable-${arch}.exe"
+    },
+    "extraFiles": [
+      {
+        "from": "dist/",
+        "to": "resources",
+        "filter": [
+          "updater*"
+        ]
+      }
+    ],
     "mac": {
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "extendInfo": {
+        "LSUIElement": true
+      }
     },
     "linux": {
       "icon": "assets/icon.png"
     }
   },
   "devDependencies": {
+    "@babel/core": "^7.27.4",
+    "@babel/preset-env": "^7.27.2",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@electron/packager": "^18.3.6",
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8",
-    "node": "^23.5.0"
+    "@types/jest": "^29.5.14",
+    "@types/node": "^24.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "asar": "^3.2.0",
+    "babel-jest": "^30.0.0",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.29.0",
+    "eslint-plugin-jest": "^28.14.0",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "^16.2.0",
+    "husky": "^9.1.7",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
+    "jest-html-reporters": "^3.1.7",
+    "jest-leak-detector": "^30.0.0",
+    "jest-watch-typeahead": "^2.2.2",
+    "jsdom": "^26.1.0",
+    "lint-staged": "^16.1.2",
+    "memlab": "^1.1.59",
+    "node": "^24.2.0",
+    "pkg": "^5.8.1",
+    "playwright": "^1.53.0",
+    "prettier": "^3.5.3",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@cliqz/adblocker-electron": "^1.34.0",
     "cross-fetch": "^4.1.0",
     "dns-over-tls": "^0.0.9",
-    "npm": "11.0",
+    "electron-prompt": "^1.7.0",
+    "npm": "11.4",
     "os": "^0.1.2",
-    "update-electron-app": "^3.1.0"
+    "tslib": "^2.8.1",
+    "update-electron-app": "^3.1.1",
+    "winston": "^3.17.0"
   }
 }

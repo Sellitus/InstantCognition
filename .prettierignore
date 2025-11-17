@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+builds/
+release/
+*.min.js
+*.min.css
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test artifacts
+test-results/
+screenshots/
+
+# Cache
+.cache/
+.eslintcache
+.prettierignore
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Generated files
+*.generated.*
+
+# Vendor files
+vendor/
+
+# Binary files
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.dmg
+*.app
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+
+# Documents
+*.pdf
+*.doc
+*.docx
+
+# Data files
+*.db
+*.sqlite

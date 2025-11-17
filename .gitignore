@@ -134,3 +134,130 @@ dist
 builds/
 
 .DS_Store
+
+# Generated files
+main.combined.css
+test-startup.js
+
+# Test and build artifacts
+error-report.json
+test-failures.json
+auto-fix.log
+*.log
+startup.log
+
+# IDE and editor files
+.vscode/
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.backup
+*.backup-*
+*.bak
+*~
+
+# Debug and diagnostic files
+debug-*.log
+diagnose-*.log
+trace-*.log
+startup-debug.log
+
+# Test wrapper files
+*-wrapper.js
+*-instrumented.js
+*-minimal.js
+trace-wrapper.js
+
+# Recovery files
+recovery.html
+
+# Cache files
+adblocker_cache.bin
+.instant-cognition/
+
+# Configuration backups
+config.json.backup*
+
+# Platform-specific build outputs
+InstantCognition-*/
+*.exe
+*.app
+*.AppImage
+*.deb
+*.rpm
+*.snap
+
+# Electron packager output
+out/
+dist/
+
+# Test builds
+test-build/
+
+# Lock files (keep package-lock.json)
+yarn.lock
+pnpm-lock.yaml
+
+# Environment-specific files
+.env.*
+.envrc
+
+# System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor directories and files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Temporary generated files (but keep useful scripts)
+main-test.js
+main-debug.js
+main-temp.js
+test-app-ready-main.js
+minimal-test.js
+main-instrumented.js
+main/index-instrumented.js
+trace-wrapper.js
+
+# Windows specific
+*.lnk
+*.msi
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+.autoflow/
+config.json

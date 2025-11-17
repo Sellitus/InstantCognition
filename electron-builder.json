@@ -1,0 +1,43 @@
+{
+  "productName": "InstantCognition",
+  "appId": "com.instantcognition.app",
+  "directories": {
+    "output": "builds"
+  },
+  "files": [
+    "**/*",
+    "!builds",
+    "!scripts",
+    "!tests",
+    "!.git",
+    "!.gitignore",
+    "!*.log",
+    "!*.md"
+  ],
+  "extraFiles": [
+    {
+      "from": "scripts/post-build-fix.js",
+      "to": "resources/post-build-fix.js"
+    }
+  ],
+  "win": {
+    "target": "dir",
+    "icon": "assets/icon.ico",
+    "extraResources": [
+      {
+        "from": "windows-launcher.js",
+        "to": "windows-launcher.js"
+      }
+    ]
+  },
+  "mac": {
+    "target": "dir",
+    "icon": "assets/icon.icns",
+    "category": "public.app-category.productivity"
+  },
+  "linux": {
+    "target": "dir",
+    "icon": "assets/icon.png",
+    "category": "Utility"
+  }
+}

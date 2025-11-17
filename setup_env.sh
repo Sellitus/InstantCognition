@@ -51,6 +51,7 @@ else
     sudo apt -y install dmg2img
     sudo apt -y install util-linux
     sudo apt -y install zip
+    sudo apt -y install libatomic1
 
     sudo apt -y purge nodejs
     sudo apt -y purge npm

@@ -1,0 +1,186 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x, 20.x]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: win32
+          - os: macos-latest
+            platform: darwin
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run type checking
+      run: npm run typecheck
+      
+    - name: Run unit tests
+      run: npm run test:unit -- --coverage
+      env:
+        NODE_ENV: test
+        
+    - name: Run integration tests
+      run: npm run test:integration
+      env:
+        NODE_ENV: test
+        
+    - name: Run performance tests
+      run: npm run test:memory
+      env:
+        NODE_ENV: test
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-${{ matrix.os }}-node-${{ matrix.node-version }}
+        
+    - name: Archive test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ matrix.os }}-node-${{ matrix.node-version }}
+        path: |
+          coverage/
+          test-results/
+          
+  e2e:
+    name: E2E Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: test
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright dependencies
+      run: npx playwright install --with-deps
+      
+    - name: Run E2E tests
+      run: npm run test:e2e
+      env:
+        NODE_ENV: test
+        DISPLAY: ':99'
+        
+    - name: Upload E2E screenshots
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: e2e-screenshots-${{ matrix.os }}
+        path: tests/e2e/screenshots/
+        
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run npm audit
+      run: npm audit --production
+      continue-on-error: true
+      
+    - name: Run security linting
+      run: npm run test:security
+      
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      continue-on-error: true
+      
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: [test, security]
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build TypeScript
+      run: npm run build:ts
+      
+    - name: Package application
+      run: |
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          npm run package-lin-x64
+        elif [ "${{ matrix.os }}" == "windows-latest" ]; then
+          npm run package-win-x64
+        else
+          npm run package-mac-x64
+        fi
+      shell: bash
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-${{ matrix.os }}
+        path: builds/

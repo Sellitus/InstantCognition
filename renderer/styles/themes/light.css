@@ -1,0 +1,67 @@
+/* Light Theme */
+body.theme-light {
+  --surface-container: #f3f4f6;
+  --surface-container-low: #ffffff;
+  --surface-container-high: #e5e7eb;
+  --surface-container-highest: #d1d5db;
+  --surface-dim: #f9fafb;
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #38bdf8;
+  --error: #dc2626;
+  --success: #059669;
+  --warning: #d97706;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-disabled: #9ca3af;
+  --divider-color: rgba(0, 0, 0, 0.08);
+  --overlay: rgba(0, 0, 0, 0.3);
+  
+  /* Component specific */
+  --button-hover: rgba(0, 0, 0, 0.04);
+  --button-active: rgba(0, 0, 0, 0.08);
+  --input-background: rgba(0, 0, 0, 0.02);
+  --input-border: rgba(0, 0, 0, 0.12);
+  --input-focus-border: var(--primary);
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Adjust component colors for light theme */
+body.theme-light #side-bar {
+  background: linear-gradient(180deg, var(--surface-container) 0%, var(--surface-container-high) 100%);
+}
+
+body.theme-light .dropdown-section > div {
+  background-color: var(--surface-container-low);
+  color: var(--text-primary);
+}
+
+body.theme-light .dropdown-section > div:hover {
+  background-color: var(--surface-container-high);
+}
+
+body.theme-light .dropdown-section > div.selected {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+body.theme-light .settings-menu > div:first-child {
+  background: var(--surface-container-low);
+}
+
+body.theme-light .settings-header {
+  background: var(--surface-container);
+}
+
+body.theme-light .shortcut-item {
+  background: var(--surface-container);
+}
+
+body.theme-light .shortcut-key {
+  background: var(--surface-container-high);
+}

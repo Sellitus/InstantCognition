@@ -1,0 +1,153 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=${{ github.event.inputs.version }}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        release_name: Release v${{ steps.get_version.outputs.version }}
+        draft: true
+        prerelease: false
+        
+  build-and-upload:
+    name: Build and Upload ${{ matrix.os }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build_cmd: npm run build-lin-x64
+            artifact_name: InstantCognition-linux-x64
+            asset_extension: .tar.gz
+          - os: windows-latest
+            build_cmd: npm run build-win-portable
+            artifact_name: InstantCognition-Portable-x64
+            asset_extension: .exe
+          - os: macos-latest
+            build_cmd: npm run build-mac-x64
+            artifact_name: InstantCognition-mac-x64
+            asset_extension: .dmg
+            
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Update version in package.json
+      run: |
+        npm version ${{ needs.create-release.outputs.version }} --no-git-tag-version
+        
+    - name: Build application
+      run: ${{ matrix.build_cmd }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Prepare artifacts
+      run: |
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          cd dist
+          tar -czf ../${{ matrix.artifact_name }}${{ matrix.asset_extension }} *
+          cd ..
+        fi
+      shell: bash
+      
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: |
+          ${{ matrix.os == 'windows-latest' && 'dist/*.exe' || 
+              matrix.os == 'macos-latest' && 'dist/*.dmg' || 
+              format('{0}{1}', matrix.artifact_name, matrix.asset_extension) }}
+        asset_name: ${{ matrix.artifact_name }}${{ matrix.asset_extension }}
+        asset_content_type: |
+          ${{ matrix.os == 'windows-latest' && 'application/vnd.microsoft.portable-executable' || 
+              matrix.os == 'macos-latest' && 'application/x-apple-diskimage' || 
+              'application/gzip' }}
+              
+  publish-release:
+    name: Publish Release
+    needs: [create-release, build-and-upload]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Publish Release
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ needs.create-release.outputs.release_id }},
+            draft: false
+          })
+          
+  create-checksums:
+    name: Create Checksums
+    needs: [create-release, build-and-upload]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      
+    - name: Generate checksums
+      run: |
+        find . -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.tar.gz" \) -exec sha256sum {} \; > checksums.txt
+        
+    - name: Upload checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: checksums.txt
+        asset_name: checksums.txt
+        asset_content_type: text/plain
