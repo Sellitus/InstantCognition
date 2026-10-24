@@ -1,0 +1,40 @@
+/* Config-reset banner — rendered by renderer.js when config.json is corrupted or reset.
+   Stays pinned (not auto-dismissed like a toast) because the user may need time to read
+   the recovery tips and decide whether to attempt a manual restore. */
+
+.config-reset-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  background: var(--status-warn-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  position: fixed;
+  top: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  max-width: 640px;
+  font-size: var(--font-size-md);
+}
+.config-reset-banner strong {
+  color: var(--status-warn);
+  font-weight: var(--font-weight-semibold);
+}
+.config-reset-banner button {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font: inherit;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.config-reset-banner button:hover {
+  background: var(--surface-hover);
+}

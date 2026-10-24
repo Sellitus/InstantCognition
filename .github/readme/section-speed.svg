@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="150" viewBox="0 0 1280 150" role="img" aria-label="Everything one keystroke away">
+<style>
+.flow{animation-name:flow;animation-timing-function:linear;animation-iteration-count:infinite}
+.breathe{animation-name:breathe;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+.tw{animation-name:tw;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+.drift{animation:drift 28s ease-in-out infinite alternate}
+.drift2{animation:drift2 34s ease-in-out infinite alternate}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 120s linear infinite}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 7s ease-in-out infinite}
+.shine{animation:shine 10s linear infinite}
+@keyframes breathe{from{opacity:.55}to{opacity:1}}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:1}}
+@keyframes drift{from{transform:translate(-40px,10px) scale(1)}to{transform:translate(50px,-16px) scale(1.08)}}
+@keyframes drift2{from{transform:translate(30px,-10px)}to{transform:translate(-60px,18px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+@keyframes shine{from{transform:translateX(0)}to{transform:translateX(-760px)}}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1280px)}}</style>
+<defs>
+<linearGradient id="t" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="760" y2="0" spreadMethod="repeat">
+  <stop offset="0" stop-color="#0FB4D6"/><stop offset=".3" stop-color="#6D5BEA"/><stop offset=".55" stop-color="#E5177E"/><stop offset=".8" stop-color="#7A5CF0"/><stop offset="1" stop-color="#0FB4D6"/>
+</linearGradient>
+<linearGradient id="line" x1="0" x2="1"><stop offset="0" stop-color="#00DCFF" stop-opacity="0"/><stop offset=".5" stop-color="#00DCFF"/><stop offset="1" stop-color="#FF2486"/></linearGradient>
+<linearGradient id="line2" x1="0" x2="1"><stop offset="0" stop-color="#FF2486"/><stop offset=".5" stop-color="#8080C3"/><stop offset="1" stop-color="#8080C3" stop-opacity="0"/></linearGradient>
+<mask id="m"><text x="640" y="112" text-anchor="middle" font-family="'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="52" font-weight="800" letter-spacing="-1.2" fill="#fff">Everything one keystroke away</text></mask>
+<filter id="g" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<rect x="353" y="38" width="200" height="2" rx="1" fill="url(#line)"/>
+<rect x="727" y="38" width="200" height="2" rx="1" fill="url(#line2)"/>
+<rect x="353" y="37" width="200" height="4" rx="2" fill="url(#line)" filter="url(#g)" opacity=".8"/>
+<rect x="727" y="37" width="200" height="4" rx="2" fill="url(#line2)" filter="url(#g)" opacity=".8"/>
+<text x="640" y="45" text-anchor="middle" font-family="'JetBrains Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace" font-size="15" font-weight="700" letter-spacing="4" fill="#8A93A8">05 · SPEED</text>
+<g mask="url(#m)"><rect class="shine" x="0" y="50" width="2400" height="80" fill="url(#t)"/></g>
+</svg>

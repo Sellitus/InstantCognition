@@ -1,0 +1,37 @@
+/* ============================================================
+   .app-tooltip — fast custom tooltip used by chrome-bar action
+   buttons. Shows after 150ms; suppressed when sidebar is hover-
+   expanded (inline labels are visible there instead).
+   ============================================================ */
+
+.app-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-toast);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  font: var(--font-size-xs)/1 var(--font-sans);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.app-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Suppress when hidden */
+
+body.no-animations .app-tooltip {
+  transition: none !important;
+}

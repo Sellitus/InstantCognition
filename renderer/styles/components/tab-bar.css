@@ -1,0 +1,655 @@
+/* Tab Bar — persistent horizontal strip showing open tabs (openTabs).
+   Lives inside .tab-bar-wrap which replaces #space-container in the body flex row,
+   so the bar pushes the webview area down instead of overlapping it. */
+.tab-bar-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+:root { --tab-bar-height: 42px; }
+
+/* Horizontal layouts: ChromeBar puts the bar on body as a window-wide strip
+   pinned to the top or bottom edge. Body pads by its height (main.css), so the
+   spaces, the assistant shell and the browser dock all sit clear of it and
+   none of them can squeeze, cover or carry it off-screen. */
+body > .tab-bar--horizontal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tab-bar-height);
+  z-index: var(--z-raised);
+}
+body[data-chrome-layout="top"]:has(> .tab-bar--horizontal.visible) { --chrome-strip-top: var(--tab-bar-height); }
+body[data-chrome-layout="bottom"]:has(> .tab-bar--horizontal.visible) { --chrome-strip-bottom: var(--tab-bar-height); }
+
+.tab-bar-wrap > #space-container {
+  flex: 1 1 auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.tab-bar {
+  position: relative;
+  flex: 0 0 var(--tab-bar-height);
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    var(--surface-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.tab-bar.visible { display: flex; }
+.tab-bar.visible::after {
+  content: '';
+  position: absolute;
+  left: var(--space-5);
+  right: var(--space-5);
+  bottom: 0;
+  height: 1px;
+  background: var(--flare-edge);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.tab-bar-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 30px;
+  padding: 0 var(--space-5) 0 var(--space-3);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font: var(--font-size-sm)/1.1 var(--font-sans);
+  max-width: 220px;
+  min-width: 74px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  user-select: none;
+  transition: background var(--duration-fast) var(--ease-standard),
+              opacity var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.tab-bar-hidden { display: none; }
+.tab-bar-tab:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* "Shown" state — applies uniformly to every visible tab regardless of mode.
+   In single-mode this is the current tab; in multi-mode it's every tab not
+   in hiddenTabs. The blue left indicator marks "this tab's webview is on
+   screen right now" and looks the same across all visible tabs. */
+.tab-bar-tab.active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)),
+    var(--surface-overlay);
+  color: var(--text-primary);
+  border-color: var(--border-brand);
+  box-shadow: var(--shadow-sm);
+}
+.tab-bar-tab.active::after {
+  content: '';
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: 3px;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--flare-edge);
+  opacity: 0.92;
+}
+
+/* Hidden in multi-mode: dimmed but still clickable to re-show */
+.tab-bar-tab.hidden {
+  opacity: 0.42;
+  background: transparent;
+  border-color: transparent;
+  font-style: normal;
+}
+.tab-bar-tab.hidden .tab-bar-label {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-tertiary);
+}
+
+/* Drag-and-drop feedback */
+.tab-bar-tab.dragging {
+  opacity: 0.55;
+}
+.tab-bar-tab.drag-over {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm), var(--flare-glow-soft);
+}
+
+.tab-bar-label {
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* Right-click context menu (floating singleton appended to body) */
+.tab-bar-context-menu {
+  position: fixed;
+  z-index: var(--z-toast);
+  min-width: 168px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-overlay);
+  padding: var(--space-3) 0;
+  font: var(--font-size-sm)/1 var(--font-sans);
+  color: var(--text-primary);
+}
+
+.tab-bar-context-menu-item {
+  padding: var(--space-4) var(--space-6);
+  cursor: pointer;
+  user-select: none;
+}
+.tab-bar-context-menu-item:hover { background: var(--surface-hover); }
+.tab-bar-context-menu-item.disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+.tab-bar-context-menu-item.disabled:hover { background: transparent; }
+
+.tab-bar-context-menu-separator {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: var(--space-3) var(--space-4);
+}
+
+/* Tab icon (favicon or first-letter) */
+.tab-bar-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  pointer-events: none;
+}
+.tab-bar-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+/* Pinned tabs — icon only, compact */
+.tab-bar-tab.pinned {
+  min-width: 36px;
+  max-width: 36px;
+  justify-content: center;
+  padding: 0;
+}
+.tab-bar-tab.pinned .tab-bar-label { display: none; }
+
+/* Private tabs (in-memory partition, never saved) */
+.tab-bar-tab.private {
+  border-style: dashed;
+}
+.tab-bar-tab.private:not(.active) {
+  border-color: var(--border-default);
+}
+.tab-bar-private-badge {
+  display: inline-flex;
+  align-items: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* Pin separator between pinned and unpinned tabs */
+.tab-bar-pin-separator {
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--border-default), transparent);
+  margin: var(--space-3) var(--space-4);
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+/* [+] New Tab button */
+.tab-bar-new-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 2px;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+  user-select: none;
+}
+.tab-bar-new-tab-btn:hover {
+  background: var(--accent-muted);
+  color: var(--accent-hover);
+  border-color: var(--border-brand);
+}
+
+/* Tab shrink behavior for overflow */
+.tab-bar-tab {
+  flex-shrink: 1;
+}
+
+/* ── Vertical mode (sidebar layout) ──────────────────────── */
+.tab-bar--vertical {
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  border-bottom: none;
+  border-right: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.tab-bar--vertical.visible::after {
+  left: auto;
+  right: 0;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  width: 1px;
+  height: auto;
+}
+
+.tab-bar--vertical .tab-bar-tab {
+  width: 100%;
+  height: 34px;
+  max-width: none;
+  min-width: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  padding: 0 var(--space-3);
+}
+.tab-bar--vertical .tab-bar-tab.active {
+  border-color: var(--border-brand);
+}
+.tab-bar--vertical .tab-bar-tab.active::after {
+  top: var(--space-3);
+  right: auto;
+  bottom: var(--space-3);
+  left: 3px;
+  width: 2px;
+  height: auto;
+}
+.tab-bar--vertical .tab-bar-tab.pinned {
+  max-width: none;
+  min-width: 0;
+  justify-content: flex-start;
+  padding: 0 var(--space-3);
+}
+
+.tab-bar--vertical .tab-bar-pin-separator {
+  width: auto;
+  height: 1px;
+  margin: var(--space-1) var(--space-3);
+}
+
+.tab-bar--vertical .tab-bar-new-tab-btn {
+  width: auto;
+  height: 34px;
+  border-radius: var(--radius-md);
+  margin-left: 0;
+  margin-top: var(--space-1);
+}
+
+/* Thin scrollbar for vertical tab bar */
+.tab-bar--vertical::-webkit-scrollbar { width: 4px; }
+.tab-bar--vertical::-webkit-scrollbar-track { background: transparent; }
+.tab-bar--vertical::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+}
+.tab-bar--vertical::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Per-tab audio indicator — appears when a tab is emitting sound or muted */
+.tab-bar-audio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.9;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard);
+}
+.tab-bar-audio:hover {
+  background: var(--surface-hover);
+  opacity: 1;
+}
+.tab-bar-audio.muted {
+  color: var(--text-tertiary);
+}
+.tab-bar-tab.pinned .tab-bar-audio {
+  /* Pinned tabs hide the label, but keep the audio indicator overlaid */
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  margin-left: 0;
+  background: var(--surface-container);
+  width: 12px;
+  height: 12px;
+}
+
+/* Action group at the end of the strip: More menu, the Assistant and Library
+   pills, Settings. It sticks to the bar's trailing edge so it stays reachable
+   while the tabs scroll underneath. */
+.tab-bar-actions {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  padding-left: var(--space-4);
+  background: linear-gradient(90deg, transparent, var(--surface-glass) var(--space-4));
+}
+
+.tab-bar-action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--font-weight-medium) var(--font-size-sm) / 1 var(--font-sans);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.tab-bar-action-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.tab-bar-action-btn:active { transform: translateY(0) scale(0.96); }
+
+.tab-bar-action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tab-bar-action-btn.is-menu-open {
+  background: var(--surface-active);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+/* More: a dot marks view or page toggles away from their resting state. */
+.tab-bar-more-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface-base), 0 0 8px rgba(var(--accent-rgb), 0.7);
+  pointer-events: none;
+  animation: tab-bar-dot-in var(--duration-normal) var(--ease-out);
+}
+.tab-bar-more.has-active { color: var(--text-primary); }
+
+@keyframes tab-bar-dot-in {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* Assistant and Library: labeled, brand-tinted pills. A soft sheen sweeps
+   across on hover; the open panel's pill keeps a lit rim. */
+.tab-bar-pill {
+  overflow: hidden;
+  padding: 0 var(--space-5) 0 var(--space-4);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  border-radius: var(--radius-full);
+  background:
+    linear-gradient(135deg, rgba(var(--brand-cyan-rgb), 0.13), rgba(var(--brand-magenta-rgb), 0.09)),
+    var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: inset 0 var(--sheen-y) 0 rgba(var(--sheen-rgb), 0.06), var(--shadow-sm);
+}
+.tab-bar-pill svg { color: var(--accent-hover); flex: 0 0 auto; }
+.tab-bar-pill--library svg { color: var(--brand-violet); }
+
+.tab-bar-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(var(--sheen-rgb), 0.16) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.tab-bar-pill:hover {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  background:
+    linear-gradient(135deg, rgba(var(--brand-cyan-rgb), 0.2), rgba(var(--brand-magenta-rgb), 0.15)),
+    var(--surface-raised);
+  box-shadow: var(--flare-glow-soft), var(--shadow-sm);
+}
+.tab-bar-pill:hover::before { transform: translateX(120%); transition: transform var(--duration-slow) var(--ease-out); }
+
+.tab-bar-pill.is-open {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface-raised), var(--surface-raised)) padding-box,
+    var(--flare-edge) border-box;
+  box-shadow: var(--flare-glow-soft), var(--shadow-sm);
+}
+
+.tab-bar-action-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--brand-gradient);
+  color: var(--accent-on);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--surface-base);
+  pointer-events: none;
+  animation: tab-bar-dot-in var(--duration-normal) var(--ease-out);
+}
+/* Inside a pill the badge sits inline after the label. */
+.tab-bar-pill--update.is-elevated { border-color: var(--status-warn); }
+.tab-bar-pill--update.is-elevated svg { color: var(--status-warn); }
+
+.tab-bar-pill .tab-bar-action-badge {
+  position: static;
+  margin-left: var(--space-1);
+  box-shadow: none;
+}
+
+.tab-bar-action-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  align-self: stretch;
+  margin: var(--space-3) var(--space-2);
+  background: var(--border-subtle);
+}
+.tab-bar--vertical .tab-bar-action-sep {
+  width: auto;
+  height: 1px;
+  align-self: stretch;
+  margin: var(--space-3) var(--space-2);
+}
+
+/* Labels: always on the pills in horizontal bars; elsewhere only when the
+   sidebar is expanded (the Tooltip suppresses itself there). */
+.tab-bar-action-btn-label {
+  display: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.tab-bar:not(.tab-bar--vertical) .tab-bar-pill .tab-bar-action-btn-label { display: inline; }
+
+/* Vertical (sidebar) bar: the group stacks below the tabs, pinned to the
+   bottom while the tab column scrolls. */
+.tab-bar--vertical .tab-bar-actions {
+  bottom: 0;
+  right: auto;
+  margin-left: 0;
+  margin-top: auto;
+  flex-direction: column;
+  align-self: stretch;
+  align-items: center;
+  padding: var(--space-3) 0 var(--space-2);
+  gap: var(--space-2);
+  background: linear-gradient(180deg, transparent, var(--surface-glass) var(--space-4));
+}
+.tab-bar--vertical .tab-bar-pill {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-lg);
+}
+.tab-bar--vertical .tab-bar-pill .tab-bar-action-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  margin: 0;
+  box-shadow: 0 0 0 2px var(--surface-base);
+}
+
+.chrome-sidebar--expanded .tab-bar--vertical .tab-bar-actions {
+  align-items: stretch;
+  padding-inline: 0;
+}
+.chrome-sidebar--expanded .tab-bar-action-btn,
+.chrome-sidebar--expanded .tab-bar--vertical .tab-bar-pill {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  justify-content: flex-start;
+  padding: var(--space-3) var(--space-5);
+  gap: var(--space-4);
+  border-radius: var(--radius-md);
+}
+.chrome-sidebar--expanded .tab-bar-action-btn:hover { transform: translateX(2px); }
+/* A narrow user-chosen width truncates labels instead of pushing the
+   buttons past the sidebar edges. */
+.chrome-sidebar--expanded .tab-bar-action-btn-label {
+  display: inline;
+  font-size: var(--font-size-sm);
+  color: inherit;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.chrome-sidebar--expanded .tab-bar--vertical .tab-bar-pill .tab-bar-action-badge {
+  position: static;
+  box-shadow: none;
+}
+.chrome-sidebar--expanded .tab-bar-more-dot { top: 50%; right: var(--space-5); margin-top: -3.5px; }
+
+body.no-animations .tab-bar-more-dot,
+body.no-animations .tab-bar-action-badge,
+body.no-animations .tab-bar-pill::before { animation: none; transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-bar-more-dot,
+  .tab-bar-action-badge { animation: none; }
+  .tab-bar-pill::before { display: none; }
+}
+
+/* ── Bottom bar layout — flip border to top edge and reorder wrap children ──
+   Used when chromeLayout === 'bottom'. Tab strip sits below the webview area
+   and visually attaches to the bottom of the window. */
+body[data-chrome-layout="bottom"] .tab-bar {
+  border-bottom: none;
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-3) var(--space-5);
+}
+body[data-chrome-layout="bottom"] > .tab-bar--horizontal {
+  top: auto;
+  bottom: 0;
+}
+
+/* When tab strip is at the bottom, tab top corners go square and the
+   "active" indicator moves from top to bottom for visual continuity. */
+body[data-chrome-layout="bottom"] .tab-bar-tab {
+  border-radius: var(--radius-md);
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+}
+body[data-chrome-layout="bottom"] .tab-bar-tab.active {
+  border-color: var(--border-brand);
+  box-shadow: var(--shadow-sm);
+}
+body[data-chrome-layout="bottom"] .tab-bar-new-tab-btn {
+  border-radius: var(--radius-md);
+}

@@ -1,0 +1,70 @@
+/* Address-bar suggestion dropdown under each tab's URL input.
+   See renderer/components/OmniboxSuggest.js. The strip anchors the list;
+   left/width are set from the input's box when the list opens. */
+.tab-chrome-strip {
+  position: relative;
+}
+
+.omnibox-list {
+  position: absolute;
+  top: calc(100% - var(--space-2));
+  z-index: var(--z-popover);
+  margin: 0;
+  padding: var(--space-2) 0;
+  list-style: none;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+}
+
+.omnibox-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.omnibox-row:hover,
+.omnibox-row[aria-selected="true"] {
+  background: var(--surface-hover);
+}
+
+.omnibox-row[aria-selected="true"] {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.omnibox-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.omnibox-detail {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.omnibox-row-search .omnibox-label::before {
+  content: "Search: ";
+  color: var(--text-tertiary);
+}
+
+.omnibox-note {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  cursor: default;
+}

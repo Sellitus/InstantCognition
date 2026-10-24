@@ -1,280 +1,51 @@
-:root {
-  --surface-container: #2d2f31;
-  --surface-container-low: #25272a;
-  --surface-container-high: #3d4043;
-  --surface-container-highest: #4a4c4f;
-  --surface-dim: #1a1c1e;
-  --primary: #006493;
-  --primary-dark: #004a6f;
-  --error: #ef4444;
-  --text-primary: #e3e3e3;
-  --text-secondary: #9ca3af;
-  --divider-color: rgba(255, 255, 255, 0.08);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
-}
+/* Design tokens live in renderer/styles/base/tokens.css — loaded first by build-css.js. */
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Google Sans', 'Roboto', sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  letter-spacing: 0;
+  /* Inter / SF Pro features: contextual alternates, tabular figures for UI
+     numerals, stylistic set 'cv11' (single-storey 'a') for cleaner UI feel.
+     Browsers ignore unknown features, so this is safe on fallback fonts. */
+  font-feature-settings: 'cv11', 'ss03', 'tnum', 'cv01';
+  text-rendering: optimizeLegibility;
   margin: 0;
-  padding: 0;
+  /* A top/bottom chrome strip is fixed (tab-bar.css); these keep panes clear of it. */
+  padding: var(--chrome-strip-top, 0px) 0 var(--chrome-strip-bottom, 0px);
+  box-sizing: border-box;
   overflow: hidden;
   display: flex;
   flex-direction: row;
   height: 100vh;
-  background-color: var(--surface-dim);
+  /* Two diagonal corner blooms — cyan top-left, pink bottom-right —
+     paint the whole app with the brand at very low opacity. This is the
+     ambient layer; component flares stack on top. */
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 220, 255, 0.035), transparent 32vw),
+    radial-gradient(circle at 100% 100%, rgba(255, 36, 134, 0.035), transparent 34vw),
+    var(--surface-sunken);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#side-bar {
-  width: 30px;
-  height: 100%;
-  background-color: var(--surface-container);
-  overflow: hidden;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: start;
-  /* transition: width 0.025s; */
-  text-align: center;
-  position: relative;
-  will-change: width;
-  transform: translateZ(0);
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-}
-
-#side-bar.expanded {
-  width: 150px;
-}
-
-#toggle-button {
-  width: calc(100% - 6px);
-  background-color: var(--surface-container-high);
-  border: none;
-  cursor: pointer;
-  color: #fff;
-  text-align: center;
-  margin: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 3.2vh;
-  min-height: 22px;
-  max-height: 30px;
-  border-radius: 8px;
-  padding: 2px;
-}
-
-#toggle-button:hover {
-  background-color: var(--surface-container-highest);
-}
-
-
-
-.menu-content {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 2px;
-  overflow-y: auto;
-  height: calc(100vh - 80px); /* Account for toggle button */
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  scroll-behavior: smooth;
-  scroll-snap-type: y mandatory;
-  scroll-snap-stop: always;
-  scroll-padding: 10px;
-  overscroll-behavior: contain;
-  scroll-snap-points-y: repeat(56px);
-  scroll-timeline: --menuScroll block;
-  animation-timeline: --menuScroll;
-  will-change: scroll-position;
-  -webkit-overflow-scrolling: touch;
-  gap: 0;
-}
-
-#fullscreen-menu {
-  width: 0;
-  display: none;
-  flex-direction: column;
-  background-color: var(--surface-container);
-  transition: width 200ms ease;
-}
-
-.settings-header {
-  display: flex;
-  align-items: center;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  padding: 12px 16px;
-  background-color: var(--surface-container);
-}
-
-.settings-header > h3 {
-  margin: 5px 5px 11px 5px;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-#close-button {
-  cursor: pointer;
-  background-color: var(--surface-container-high);
-  padding: 3px;
-  margin: -4px 4px 0 auto;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  color: #ffffff;
-  border: none;
-}
-
-#close-button:hover {
-  background-color: var(--error);
-}
-
-.setting-option {
-  margin: 0 0 4px 5px;
-  display: flex;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-.setting-option > label {
-  margin-top: -3.5px;
-}
-
-.dropdown-section {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 0;
-  padding: 4px 0;
-  position: relative;
-}
-
-.dropdown-section:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 8px;
-  right: 8px;
-  height: 1px;
-  background-color: var(--divider-color);
-  opacity: 0.8;
-}
-
-.dropdown-section > div {
-  padding: 2px 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  white-space: nowrap;
-  background-color: var(--surface-container-high);
-  margin: 1px 3px;
-  height: 1.8vh;
-  min-height: 14px;
-  max-height: 20px;
-  font-size: clamp(14px, 1.1vh, 18px);
-  font-weight: 600;
-  scroll-snap-align: center;
-  scroll-margin: 4px;
-  animation-range: entry 25% cover 75%;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.dropdown-section > div:hover {
-  background-color: var(--surface-container-highest);
-}
-
-.dropdown-section > div.selected {
-  background-color: var(--primary);
-  color: #ffffff;
-}
-
-.collapsed-menu-logo {
-  width: auto;
-  height: 1.7vh;
-  min-width: 12px;
-  min-height: 12px;
-  max-width: 20px;
-  max-height: 20px;
-  object-fit: contain;
-}
-
-.collapsed-menu-logo-long {
-  width: auto;
-  height: 1.3vh;
-  min-width: 16px;
-  min-height: 8px;
-  max-width: 28px;
-  max-height: 15px;
-  margin: 0.3vh 0 0.3vh -1.8px;
-  object-fit: contain;
-}
-
-.collapsed-menu-logo-instant-cognition {
-  width: auto;
-  height: 2.4vh;
-  min-width: 18px;
-  min-height: 18px;
-  max-width: 28px;
-  max-height: 28px;
-  object-fit: contain;
-}
-
-.slide-in {
-  transition: width 200ms ease-out;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000;
-}
-
-#claude-logo {
-  margin-left: -0.8px;
-}
-
-#copilot-logo,
-#mistral-logo {
-  margin-left: -1px;
-}
-
-#cognitizer-container {
+#space-container {
   height: 100%;
   width: 100%;
   display: flex;
   flex-direction: row;
 }
 
-.cognitizer-browser {
+.space-browser {
   flex: 1;
   min-width: 0;
   will-change: flex-basis, max-width;
   transform: translateZ(0);
 }
 
-#cognitizer-container.inactive {
+#space-container.inactive {
   display: none;
 }
 
@@ -282,7 +53,7 @@ webview {
   flex: 1;
   height: 100%;
   background-color: var(--surface-dim);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 webview.active {
@@ -295,7 +66,7 @@ webview.inactive {
 
 #browser-container {
   flex: 1;
-  height: 100vh;
+  height: 100%;
   display: flex;
   position: relative;
 }
@@ -314,52 +85,237 @@ webview.inactive {
   display: flex;
 }
 
-#find-bar {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 400px;
-  height: 40px;
-  background-color: var(--surface-container);
-  color: var(--text-primary);
-  display: none;
-  align-items: center;
-  padding: 8px 16px;
-  z-index: 1000;
-  border-radius: 0 0 12px 12px;
-  box-shadow: var(--shadow-lg);
-  animation: slideDown 300ms ease-out;
-}
-
-#find-bar input {
+/* Wrapper for individual space webviews. Column layout so the per-tab
+   chrome strip (TabChromeStrip) sits ABOVE its sibling <webview>. */
+.space-webview-wrapper {
+  position: relative;
   flex: 1;
-  margin-right: 5px;
-  height: 25px;
-  padding: 5px;
-  background-color: var(--surface-container-high);
-  color: var(--text-primary);
-  border: 1px solid var(--surface-container-highest);
-  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-sunken);
+  transition: border-color var(--duration-normal) var(--ease-standard),
+              box-shadow var(--duration-normal) var(--ease-standard);
 }
 
-#find-bar button {
-  margin-left: 5px;
+/* Per-tab navigation + URL + agent strip (one per visible webview).
+   See renderer/components/TabChromeStrip.js. */
+.tab-chrome-strip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--surface-glass);
+  border-bottom: 1px solid var(--border-subtle);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  -webkit-app-region: no-drag;
+}
+
+.tab-chrome-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.tab-chrome-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.tab-chrome-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tab-chrome-btn.is-loading {
+  animation: tabChromeSpin 700ms linear infinite;
+}
+
+@keyframes tabChromeSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tab-chrome-url {
+  flex: 1 1 auto;
+  min-width: 0;
   height: 30px;
-  background-color: var(--surface-container-high);
+  padding: 0 var(--space-5);
+  font-size: var(--font-size-sm);
   color: var(--text-primary);
-  border: 1px solid var(--surface-container-highest);
-  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent), var(--surface-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
 }
 
-#find-bar button:hover {
-  background-color: var(--surface-container-highest);
+.tab-chrome-url:focus-visible {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring-inset);
 }
 
-#find-results-count {
-  margin: 0 4px;
-  font-size: 14px;
-  min-width: 80px;
-  text-align: center;
-  white-space: nowrap;
+.tab-chrome-copilot-btn:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.tab-chrome-agent-btn {
+  color: var(--accent);
+  background: var(--accent-muted);
+  border-color: var(--border-brand);
+}
+
+.tab-chrome-agent-status {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  transition: background-color var(--duration-fast, 150ms) var(--ease-standard);
+}
+
+.tab-chrome-agent-status[data-status="running"] {
+  background: var(--accent);
+  /* "Agent thinking" pulse — pairs the accent dot with a soft pink halo
+     so the running state reads as alive, not just lit. */
+  box-shadow: 0 0 10px var(--accent), 0 0 18px rgba(255, 36, 134, 0.18);
+  animation: tabChromePulse 1.4s ease-in-out infinite;
+}
+
+.tab-chrome-agent-status[data-status="done"] { background: var(--status-success); }
+.tab-chrome-agent-status[data-status="failed"],
+.tab-chrome-agent-status[data-status="error"] { background: var(--status-error); }
+.tab-chrome-agent-status[data-status="stopped"] { background: var(--status-warn); }
+
+@keyframes tabChromePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Drag handle between side-by-side spaces (resizable splits) */
+.space-resize-handle {
+  flex: 0 0 6px;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 5;
+}
+.space-resize-handle.vertical {
+  width: auto;
+  height: 6px;
+  flex: 0 0 6px;
+  cursor: row-resize;
+}
+.space-resize-handle:hover {
+  /* Resize seam lights up as a faint cyan→magenta beam — only on hover, only
+     where the user is interacting. */
+  background: var(--flare-edge-soft);
+}
+.space-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.space-resize-handle.vertical::after {
+  top: 50%; bottom: auto;
+  left: 0; right: 0;
+  width: auto;
+  height: 1px;
+}
+.space-resize-overlay {
+  position: fixed;
+  inset: 0;
+  cursor: col-resize;
+  z-index: 100000;
+  background: transparent;
+}
+.space-resize-overlay.vertical { cursor: row-resize; }
+
+/* Loading overlay for space webviews */
+.webview-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-dim);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.webview-loading-overlay.fade-out {
+  opacity: 0;
+}
+
+.webview-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--surface-container-high);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Drag-to-Reorder */
+.space-dropdown-section.reorder-mode div {
+  cursor: grab;
+  border: 1px dashed transparent;
+  transition: border-color var(--duration-fast), opacity var(--duration-fast);
+}
+.space-dropdown-section.reorder-mode div:hover {
+  border-color: var(--border-brand);
+}
+.space-dropdown-section div.dragging {
+  opacity: 0.4;
+}
+.space-dropdown-section div.drag-over {
+  border-color: var(--accent) !important;
+  background: var(--accent-subtle);
+}
+/* Settings space drag */
+.space-item.dragging {
+  opacity: 0.4;
+}
+.space-item.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.space-item {
+  cursor: grab;
+}
+.space-item:active {
+  cursor: grabbing;
 }

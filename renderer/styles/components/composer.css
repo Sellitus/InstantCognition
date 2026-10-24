@@ -1,0 +1,87 @@
+/* Composer: the `/` and `@` inline palette and the context-window meter. */
+
+.inline-palette {
+  position: absolute;
+  z-index: var(--z-popover);
+  bottom: 100%;
+  left: var(--space-6);
+  right: var(--space-6);
+  margin-bottom: var(--space-1);
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--space-1);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-overlay);
+  font-size: var(--font-size-sm);
+}
+
+.inline-palette__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.inline-palette__item[aria-selected="true"] { background: var(--surface-active); }
+.inline-palette__item:not([aria-disabled="true"]):hover { background: var(--surface-hover); }
+.inline-palette__item[aria-disabled="true"] { cursor: default; color: var(--text-tertiary); }
+.inline-palette__item.is-error { color: var(--status-error); background: var(--status-error-bg); }
+
+.inline-palette__label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+.inline-palette__item--status .inline-palette__label { font-family: var(--font-sans); white-space: normal; }
+.inline-palette__detail {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+.inline-palette__item--skill .inline-palette__label { color: var(--accent); }
+
+.context-meter {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+.context-meter:hover { background: var(--surface-hover); color: var(--text-secondary); }
+.context-meter:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.context-meter[aria-busy="true"] { cursor: progress; opacity: 0.6; }
+.context-meter__ring { display: block; }
+.context-meter__track { fill: none; stroke: var(--border-subtle); stroke-width: 2.5; }
+.context-meter__arc {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--duration-normal) var(--ease-standard);
+}
+.context-meter[data-level="ok"] { color: var(--accent); }
+.context-meter[data-level="warn"] { color: var(--status-warn); }
+.context-meter[data-level="danger"] { color: var(--status-error); }
+
+@media (prefers-reduced-motion: reduce) {
+  .context-meter, .context-meter__arc { transition: none; }
+}

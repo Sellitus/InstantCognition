@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="56" viewBox="0 0 1280 56" role="img" aria-label="">
+<style>
+.flow{animation-name:flow;animation-timing-function:linear;animation-iteration-count:infinite}
+.breathe{animation-name:breathe;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+.tw{animation-name:tw;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+.drift{animation:drift 28s ease-in-out infinite alternate}
+.drift2{animation:drift2 34s ease-in-out infinite alternate}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 120s linear infinite}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 7s ease-in-out infinite}
+.shine{animation:shine 10s linear infinite}
+@keyframes breathe{from{opacity:.55}to{opacity:1}}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:1}}
+@keyframes drift{from{transform:translate(-40px,10px) scale(1)}to{transform:translate(50px,-16px) scale(1.08)}}
+@keyframes drift2{from{transform:translate(30px,-10px)}to{transform:translate(-60px,18px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1280px)}}</style>
+<defs>
+<filter id="glow" filterUnits="userSpaceOnUse" x="-200" y="-300" width="3000" height="1300"><feGaussianBlur stdDeviation="6"/></filter>
+<filter id="soft" filterUnits="userSpaceOnUse" x="-200" y="-300" width="3000" height="1300"><feGaussianBlur stdDeviation="2"/></filter>
+<linearGradient id="da" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="640" y2="0" spreadMethod="repeat"><stop offset="0%" stop-color="#2FB9D6"/><stop offset="12.5%" stop-color="#00DCFF"/><stop offset="25%" stop-color="#3CF2A0"/><stop offset="37.5%" stop-color="#00DCFF"/><stop offset="50%" stop-color="#8080C3"/><stop offset="62.5%" stop-color="#FF2486"/><stop offset="75%" stop-color="#9B5CFF"/><stop offset="87.5%" stop-color="#2FB9D6"/><stop offset="100%" stop-color="#2FB9D6"/></linearGradient>
+<linearGradient id="db" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="640" y2="0" spreadMethod="repeat"><stop offset="0%" stop-color="#FF2486"/><stop offset="12.5%" stop-color="#9B5CFF"/><stop offset="25%" stop-color="#8080C3"/><stop offset="37.5%" stop-color="#00DCFF"/><stop offset="50%" stop-color="#2FB9D6"/><stop offset="62.5%" stop-color="#00DCFF"/><stop offset="75%" stop-color="#8080C3"/><stop offset="87.5%" stop-color="#FF2486"/><stop offset="100%" stop-color="#FF2486"/></linearGradient>
+<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".2" stop-color="#fff"/><stop offset=".8" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<mask id="edges"><rect width="1280" height="56" fill="url(#fade)"/></mask>
+</defs>
+<g mask="url(#edges)">
+<defs><path id="d0" d="M0 32L16 33.1L32 33.8L48 34L64 33.9L80 33.5L96 33.1L112 32.6L128 32.4L144 32.4L160 32.5L176 32.9L192 33.4L208 33.8L224 34L240 34L256 33.5L272 32.5L288 31.1L304 29.3L320 27.3L336 25.2L352 23.2L368 21.6L384 20.3L400 19.5L416 19.3L432 19.6L448 20.3L464 21.3L480 22.4L496 23.5L512 24.5L528 25.2L544 25.6L560 25.8L576 25.8L592 25.8L608 25.9L624 26.2L640 26.8L656 27.8L672 29.1L688 30.7L704 32.4L720 34.2L736 35.7L752 36.8L768 37.5L784 37.6L800 37.2L816 36.2L832 34.8L848 33.2L864 31.4L880 29.8L896 28.3L912 27.2L928 26.5L944 26.1L960 25.9L976 25.9L992 25.9L1008 25.7L1024 25.4L1040 24.8L1056 23.9L1072 22.9L1088 21.8L1104 20.7L1120 19.8L1136 19.3L1152 19.3L1168 19.9L1184 21L1200 22.5L1216 24.4L1232 26.4L1248 28.5L1264 30.4L1280 32L1296 33.1L1312 33.8L1328 34L1344 33.9L1360 33.5L1376 33.1L1392 32.6L1408 32.4L1424 32.4L1440 32.5L1456 32.9L1472 33.4L1488 33.8L1504 34L1520 34L1536 33.5L1552 32.5L1568 31.1L1584 29.3L1600 27.3L1616 25.2L1632 23.2L1648 21.6L1664 20.3L1680 19.5L1696 19.3L1712 19.6L1728 20.3L1744 21.3L1760 22.4L1776 23.5L1792 24.5L1808 25.2L1824 25.6L1840 25.8L1856 25.8L1872 25.8L1888 25.9L1904 26.2L1920 26.8L1936 27.8L1952 29.1L1968 30.7L1984 32.4L2000 34.2L2016 35.7L2032 36.8L2048 37.5L2064 37.6L2080 37.2L2096 36.2L2112 34.8L2128 33.2L2144 31.4L2160 29.8L2176 28.3L2192 27.2L2208 26.5L2224 26.1L2240 25.9L2256 25.9L2272 25.9L2288 25.7L2304 25.4L2320 24.8L2336 23.9L2352 22.9L2368 21.8L2384 20.7L2400 19.8L2416 19.3L2432 19.3L2448 19.9L2464 21L2480 22.5L2496 24.4L2512 26.4L2528 28.5L2544 30.4L2560 32"/></defs>
+<g class="breathe" style="animation-duration:5s;opacity:1">
+  <g class="flow" style="animation-duration:18s" fill="none" stroke="url(#da)" stroke-linecap="round">
+    <use href="#d0" stroke-width="22" opacity=".22" filter="url(#glow)"/>
+    <use href="#d0" stroke-width="11" opacity=".42" filter="url(#soft)"/>
+    <use href="#d0" stroke-width="2.6" opacity=".9"/>
+  </g>
+</g>
+<defs><path id="d1" d="M0 33.3L16 32.7L32 31.8L48 30.5L64 29L80 27.3L96 25.7L112 24L128 22.6L144 21.5L160 20.7L176 20.4L192 20.6L208 21.3L224 22.5L240 24.1L256 25.9L272 28L288 30L304 32L320 33.7L336 35.1L352 35.9L368 36.3L384 36.1L400 35.3L416 34.1L432 32.5L448 30.6L464 28.5L480 26.4L496 24.5L512 22.9L528 21.6L544 20.8L560 20.5L576 20.6L592 21.3L608 22.3L624 23.7L640 25.2L656 26.9L672 28.5L688 30.1L704 31.4L720 32.4L736 33.1L752 33.5L768 33.5L784 33.2L800 32.7L816 32L832 31.1L848 30.1L864 29.1L880 28.2L896 27.3L912 26.5L928 25.8L944 25.3L960 24.9L976 24.6L992 24.4L1008 24.3L1024 24.3L1040 24.4L1056 24.7L1072 25.1L1088 25.6L1104 26.2L1120 27L1136 27.8L1152 28.8L1168 29.8L1184 30.8L1200 31.8L1216 32.6L1232 33.2L1248 33.6L1264 33.6L1280 33.3L1296 32.7L1312 31.8L1328 30.5L1344 29L1360 27.3L1376 25.7L1392 24L1408 22.6L1424 21.5L1440 20.7L1456 20.4L1472 20.6L1488 21.3L1504 22.5L1520 24.1L1536 25.9L1552 28L1568 30L1584 32L1600 33.7L1616 35.1L1632 35.9L1648 36.3L1664 36.1L1680 35.3L1696 34.1L1712 32.5L1728 30.6L1744 28.5L1760 26.4L1776 24.5L1792 22.9L1808 21.6L1824 20.8L1840 20.5L1856 20.6L1872 21.3L1888 22.3L1904 23.7L1920 25.2L1936 26.9L1952 28.5L1968 30.1L1984 31.4L2000 32.4L2016 33.1L2032 33.5L2048 33.5L2064 33.2L2080 32.7L2096 32L2112 31.1L2128 30.1L2144 29.1L2160 28.2L2176 27.3L2192 26.5L2208 25.8L2224 25.3L2240 24.9L2256 24.6L2272 24.4L2288 24.3L2304 24.3L2320 24.4L2336 24.7L2352 25.1L2368 25.6L2384 26.2L2400 27L2416 27.8L2432 28.8L2448 29.8L2464 30.8L2480 31.8L2496 32.6L2512 33.2L2528 33.6L2544 33.6L2560 33.3"/></defs>
+<g class="breathe" style="animation-duration:6s;opacity:1">
+  <g class="flow" style="animation-duration:24s;animation-direction:reverse" fill="none" stroke="url(#db)" stroke-linecap="round">
+    <use href="#d1" stroke-width="16" opacity=".22" filter="url(#glow)"/>
+    <use href="#d1" stroke-width="8" opacity=".42" filter="url(#soft)"/>
+    <use href="#d1" stroke-width="1.9" opacity=".9"/>
+  </g>
+</g>
+</g>
+</svg>

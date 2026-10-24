@@ -1,0 +1,175 @@
+/* PromptDialog — single-line text-input modal. Shares the modal recipe with
+   .confirm-dialog and .permission-prompt: overlay surface, xl radius, blurred backdrop. */
+
+.prompt-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: var(--overlay-backdrop);
+  backdrop-filter: blur(var(--blur-backdrop));
+  -webkit-backdrop-filter: blur(var(--blur-backdrop));
+  z-index: var(--z-modal);
+  animation: prompt-dialog-overlay-in var(--duration-fast) var(--ease-standard);
+}
+
+.prompt-dialog-overlay.prompt-dialog-leaving {
+  animation: prompt-dialog-overlay-out var(--duration-fast) var(--ease-in) forwards;
+}
+
+@keyframes prompt-dialog-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes prompt-dialog-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.prompt-dialog {
+  width: min(400px, 100%);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
+  padding: var(--space-6);
+  font: var(--font-size-md)/var(--line-height-normal) var(--font-sans);
+  animation: prompt-dialog-in var(--duration-normal) var(--ease-out);
+}
+
+@keyframes prompt-dialog-in {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--space-2))) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.prompt-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.prompt-dialog-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: var(--space-1);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.prompt-dialog-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) 0 0;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.prompt-dialog-close:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.prompt-dialog-message {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+  line-height: var(--line-height-relaxed);
+}
+
+.prompt-dialog-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+}
+.prompt-dialog-input:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--focus-ring);
+}
+.prompt-dialog-input[aria-invalid='true'] {
+  border-color: var(--status-error);
+}
+
+.prompt-dialog-hint {
+  margin-top: calc(var(--space-3) * -1);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--status-error);
+}
+
+.prompt-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}
+
+.prompt-dialog-actions button {
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: 1px solid var(--border-default);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.prompt-dialog-actions button:hover {
+  background: var(--surface-hover);
+}
+
+.prompt-dialog-actions button:focus-visible,
+.prompt-dialog-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.prompt-dialog-confirm.prompt-dialog-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-on);
+}
+.prompt-dialog-confirm.prompt-dialog-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.prompt-dialog-confirm.prompt-dialog-danger {
+  background: var(--status-error);
+  border-color: var(--status-error);
+  color: var(--accent-on);
+}
+.prompt-dialog-confirm.prompt-dialog-danger:hover {
+  background: color-mix(in srgb, var(--status-error) 86%, var(--text-primary));
+  border-color: color-mix(in srgb, var(--status-error) 86%, var(--text-primary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-dialog-overlay,
+  .prompt-dialog { animation: none; }
+}
+body.no-animations .prompt-dialog-overlay,
+body.no-animations .prompt-dialog { animation: none; }

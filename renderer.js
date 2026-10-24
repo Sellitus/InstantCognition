@@ -1,8 +1,3 @@
-// Main renderer process entry point
-// This file ensures the renderer module loads correctly in both dev and production
-
-// Since nodeIntegration is enabled, we can use require directly
-// The key is that all requires are relative to where THIS file is loaded from (the app root)
-
-// Simply require the renderer module using a path relative to the app root
+// Entry point for the shell bundle: scripts/build-renderer.js bundles this file
+// into renderer.bundle.js, which index.html loads.
 require('./renderer/renderer');

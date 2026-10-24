@@ -1,0 +1,261 @@
+/* Permission prompt: centered modal asking the user to allow/block a site
+   permission. SiteBlockedPrompt reuses this surface. Shares the modal recipe
+   with .confirm-dialog and .prompt-dialog. */
+.permission-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: var(--overlay-backdrop);
+  backdrop-filter: blur(var(--blur-backdrop));
+  -webkit-backdrop-filter: blur(var(--blur-backdrop));
+  /* Above ordinary modals: a site can request a permission while one is open. */
+  z-index: calc(var(--z-modal) + 10);
+  animation: permission-prompt-overlay-in var(--duration-fast) var(--ease-standard);
+}
+
+@keyframes permission-prompt-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.permission-prompt {
+  width: min(420px, 100%);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font: var(--font-size-md)/var(--line-height-normal) var(--font-sans);
+  animation: permission-prompt-in var(--duration-normal) var(--ease-out);
+}
+
+@keyframes permission-prompt-in {
+  from { opacity: 0; transform: translateY(var(--space-2)) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.permission-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.permission-prompt-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+.site-blocked-prompt .permission-prompt-icon {
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
+}
+.permission-prompt-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.permission-prompt-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: calc(-1 * var(--space-3));
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.permission-prompt-close:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+.permission-prompt-origin {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+.permission-prompt-detail {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+.permission-prompt-target {
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+.permission-prompt-remember {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+.permission-prompt-remember input { cursor: pointer; accent-color: var(--accent); }
+
+.permission-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.permission-prompt-actions button {
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+.permission-prompt-actions button:hover { background: var(--surface-hover); }
+.permission-prompt-actions .permission-prompt-allow {
+  color: var(--accent-on);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.permission-prompt-actions .permission-prompt-allow:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.permission-prompt-actions button:focus-visible,
+.permission-prompt-close:focus-visible,
+.permission-prompt-remember input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.site-blocked-prompt { width: min(480px, 100%); }
+.site-blocked-allowlist-hint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .permission-prompt-overlay,
+  .permission-prompt { animation: none; }
+}
+body.no-animations .permission-prompt-overlay,
+body.no-animations .permission-prompt { animation: none; }
+
+/* Password save bar: non-modal offer after a login submit. Top-center so it
+   never covers the bottom-right toast stack, and below modals so a dialog
+   opened meanwhile stays on top. */
+.password-bar {
+  position: fixed;
+  top: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - var(--space-8)));
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
+  font: var(--font-size-md)/var(--line-height-normal) var(--font-sans);
+  z-index: calc(var(--z-modal) - 10);
+  animation: password-bar-in var(--duration-normal) var(--ease-out);
+}
+@keyframes password-bar-in {
+  from { opacity: 0; transform: translate(-50%, calc(-1 * var(--space-2))); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.password-bar-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+.password-bar-text { flex: 1 1 200px; min-width: 0; }
+.password-bar-title {
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+.password-bar-user {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+.password-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.password-bar-actions button {
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.password-bar-actions button:hover { background: var(--surface-hover); }
+.password-bar-actions .password-bar-save {
+  color: var(--accent-on);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.password-bar-actions .password-bar-save:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.password-bar-actions button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Settings → Passwords: a revealed password. */
+.sv-password-revealed {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  word-break: break-all;
+  user-select: text;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .password-bar { animation: none; }
+}
+body.no-animations .password-bar { animation: none; }

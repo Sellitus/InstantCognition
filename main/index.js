@@ -1,292 +1,131 @@
-// ##### index.js
-console.log('[MAIN] Starting InstantCognition main process...');
-console.log('[MAIN] Process argv:', process.argv);
-console.log('[MAIN] __dirname:', __dirname);
-console.log('[MAIN] process.cwd():', process.cwd());
+// ##### index.js — InstantCognition Main Process Bootstrap
+// This file handles early initialization, window creation, and delegates
+// all service/IPC logic to App.js and the services in main/services/.
 
-// Early GPU fix - must be done before loading other modules
-// GPU fix moved to after main electron import
+console.log('[MAIN] Starting InstantCognition main process...');
 
 // Initialize error handler first
-console.log('[MAIN] Loading error handler...');
 let errorHandler;
-let errorLogPath;
 try {
   errorHandler = require('./utils/errorHandler');
-  console.log('[MAIN] Error handler loaded successfully');
 } catch (error) {
   console.error('[MAIN] Failed to load error handler:', error);
   errorHandler = null;
 }
 
 // Initialize recovery mode
-console.log('[MAIN] Loading recovery mode...');
 let recoveryMode;
 try {
   recoveryMode = require('./utils/recovery');
-  console.log('[MAIN] Recovery mode loaded successfully');
 } catch (error) {
   console.error('[MAIN] Failed to load recovery mode:', error);
   recoveryMode = null;
 }
 
-// Debug logging removed - scripts directory simplified
-// Use logger.js in main/utils for production logging
-
-// // Automatically update the app every 1 hour
-// const { updateElectronApp } = require('update-electron-app');
-// updateElectronApp();
-
-console.log('[MAIN] Loading v8...');
 const v8 = require('v8');
-console.log('[MAIN] Loading electron modules...');
 const {
   app,
   BrowserWindow,
-  globalShortcut,
-  Menu,
-  Tray,
-  nativeImage,
   dialog,
+  globalShortcut,
+  protocol,
   ipcMain,
-  shell,
 } = require('electron');
 
-// GPU fix for headless environments
-app.disableHardwareAcceleration();
-// Note: ipcRenderer removed - it's only for renderer process
-console.log('[MAIN] Loading node modules...');
+// Every IPC listener checks its sender; installed before any handler registers.
+const ipcSenderPolicy = require('./utils/ipcSenderPolicy');
+ipcSenderPolicy.install(ipcMain);
+
+// Privileged schemes must be registered before app 'ready'; this file loads
+// synchronously from main.js ahead of it.
+require('./services/artifactFrames').registerScheme(protocol);
+
+// macOS: enable key repeat in text inputs (disable press-and-hold accent menu)
+if (process.platform === 'darwin') {
+  const { execFileSync } = require('child_process');
+  try {
+    execFileSync('defaults', ['write', app.getName(), 'ApplePressAndHoldEnabled', '-bool', 'false']);
+  } catch (_) { /* ignore — macOS UX nicety, OK if defaults command isn't available */ }
+}
+
 const os = require('os');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const EventEmitter = require('events');
-console.log('[MAIN] All core modules loaded');
+const fs = require('fs');
 
-// Set higher max listeners limit globally
 EventEmitter.defaultMaxListeners = 50;
 
-// Event listener tracking system
-// const eventListenerTracker = new Map();
-// const ipcHandlers = new Map();
-
-// TODO: Re-enable when needed
-// function trackEventListener(target, event, handler, options = {}) {
-//   if (!eventListenerTracker.has(target)) {
-//     eventListenerTracker.set(target, new Map());
-//   }
-//   const targetEvents = eventListenerTracker.get(target);
-//   if (!targetEvents.has(event)) {
-//     targetEvents.set(event, new Set());
-//   }
-//   targetEvents.get(event).add({ handler, options });
-//   target.addEventListener(event, handler, options);
-// }
-
-// Optimize window background behavior
-// TODO: Re-enable when needed
-// function optimizeWindowBackground(window) {
-//   let throttleTimeout;
-//   const THROTTLE_DELAY = 30000; // 30 seconds
-//
-//   const blurHandler = () => {
-//     throttleTimeout = setTimeout(() => {
-//       if (!window.isDestroyed() && !window.isFocused()) {
-//         window.webContents.setBackgroundThrottling(true);
-//         if (global.gc) global.gc();
-//       }
-//     }, THROTTLE_DELAY);
-//   };
-//
-//   const focusHandler = () => {
-//     if (throttleTimeout) {
-//       clearTimeout(throttleTimeout);
-//     }
-//     if (!window.isDestroyed()) {
-//       window.webContents.setBackgroundThrottling(false);
-//     }
-//   };
-//
-//   trackEventListener(window, 'blur', blurHandler);
-//   trackEventListener(window, 'focus', focusHandler);
-// }
-const { ElectronBlocker } = require('@cliqz/adblocker-electron');
-const fetch = require('cross-fetch');
-const fs = require('fs');
-// const { autoUpdater } = require('electron-updater');
-const { execSync } = require('child_process');
-const windowManager = require('./window/windowManager');
 const configService = require('./services/ConfigService');
-// const util = require('util');
-// const fetch = require('node-fetch'); // Use node-fetch for server-side requests
-// Not yet implemented: dns-over-https / dns-over-tls
-// const dnstls = require('dns-over-tls');
-// const dns = require('dns');
-
-app.commandLine.appendSwitch('enable-hardware-acceleration');
-app.commandLine.appendSwitch('enable-gpu-rasterization');
-app.commandLine.appendSwitch('enable-zero-copy');
-app.commandLine.appendSwitch('ignore-gpu-blacklist');
-
+const App = require('./App');
 const logger = require('./utils/logger');
+const visibilityThrottling = require('./services/visibilityThrottling');
+const externalLinks = require('./services/externalLinks');
+const { errMsg } = require('../shared/errMsg');
+const { FRAME_ORIGIN: ARTIFACT_FRAME_ORIGIN } = require('../shared/artifactFrame');
+const {
+  DOM_MOUSE_BUTTONS,
+  NAVIGATION_ACTIONS,
+  getNavigationActionForElectronMouseButton,
+  getNavigationActionForKeyInput,
+  getNavigationActionForSwipe,
+} = require('../shared/navigationInput');
 
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-});
+// Process error handlers are registered in main.js (entry point) and errorHandler.js
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// global.console.log = (...args) => logger.info(args); // Disabled for headless compatibility
-// global.console.error = (...args) => logger.error(args); // Disabled for headless compatibility
-
-// Only override console in production non-headless environments
-if (process.env.NODE_ENV === 'production' && !process.argv.includes('--no-sandbox')) {
-  global.console.log = (...args) => logger.info(args);
-  global.console.error = (...args) => logger.error(args);
+// Override console in packaged builds so logs land in winston, not the
+// terminal-less console. Use app.isPackaged (electron-builder doesn't set
+// NODE_ENV) but allow --no-sandbox dev runs to keep their console.
+if (app.isPackaged && !process.argv.includes('--no-sandbox')) {
+  global.console.log = (...args) => logger.info(args.join(' '));
+  global.console.error = (...args) => logger.error(args.join(' '));
 }
 
-// Initial creation of the blocker
-let blocker;
-let intervalId;
-let tray = null;
-let mainWindow;
-// Add cognitizer switching handler
-let lastCognitizerSwitch = 0;
-// Optimize adblocker creation by caching the blocker instance
-let blockerCache = null;
-let acceptedCertificates = {};
-let acceptedCertificatesPath;
-let isAppQuitting = false;
+// Load config early
+configService.loadConfig();
 
-// Save accepted certificates to file
-function saveAcceptedCertificates() {
-  try {
-    if (acceptedCertificatesPath) {
-      fs.writeFileSync(acceptedCertificatesPath, JSON.stringify(acceptedCertificates, null, 2));
-    }
-  } catch (error) {
-    console.error('Failed to save accepted certificates:', error);
-  }
+// Hardware acceleration policy. 'auto' (default) keeps the legacy behavior
+// (off on Windows where some drivers corrupt rendering, on elsewhere); 'on'
+// forces it on; 'off' forces it off. Must run before app.ready.
+const hwAccelSetting = typeof configService.get === 'function'
+  ? configService.get('settings.hardwareAcceleration', 'auto')
+  : 'auto';
+const hwAccel = hwAccelSetting === 'on' || hwAccelSetting === 'off'
+  ? hwAccelSetting
+  : (process.platform === 'win32' ? 'off' : 'on');
+if (hwAccel === 'off') {
+  app.disableHardwareAcceleration();
+} else {
+  app.commandLine.appendSwitch('enable-hardware-acceleration');
+  app.commandLine.appendSwitch('enable-gpu-rasterization');
+  app.commandLine.appendSwitch('enable-zero-copy');
+  app.commandLine.appendSwitch('ignore-gpu-blacklist');
 }
 
-// URL for Hagezi's blocklist (choose the appropriate one for your needs)
-// let HAGEZI_LIST_URL = 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt';
-let HAGEZI_LIST_URL =
-  'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.plus.txt';
-let OISD_LIST_URL = 'https://big.oisd.nl/';
-let HAGEZI_TIF = 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.txt';
-let HAGEZI_BADWARE =
-  'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/hoster.txt';
-let HAGEZI_FAKE = 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/fake.txt';
-let HAGEZI_ABUSED_TLD =
-  'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/spam-tlds-adblock.txt';
-
-// let ONEHOSTS_LIST_URL = 'https://raw.githubusercontent.com/badmojr/1Hosts/master/Lite/hosts.txt';
-// let ADGUARD_DNS_LIST_URL =
-//   'https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_15_DnsFilter/filter.txt';
-// let ADGUARD_TRACKING_LIST_URL =
-//   'https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Spyware/filter.txt';
-// let EASYLIST_LIST_URL = 'https://easylist.to/easylist/easylist.txt';
-// let EASYPRIVACY_LIST_URL = 'https://easylist.to/easylist/easyprivacy.txt';
-// let STEVEN_BLACK_LIST_URL = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts';
-
-let activeLists = [
-  HAGEZI_LIST_URL,
-  OISD_LIST_URL,
-  HAGEZI_TIF,
-  HAGEZI_BADWARE,
-  HAGEZI_FAKE,
-  HAGEZI_ABUSED_TLD,
-];
-
-// Enhanced ad blocker with smart caching and dynamic updates
-async function createAndUpdateBlocker() {
-  if (blockerCache) return blockerCache;
-
-  try {
-    const cachePath = path.join(
-      os.platform() === 'darwin'
-        ? path.join(os.homedir(), '.instant-cognition', 'adblocker_cache.bin')
-        : path.join(__dirname, '../../adblocker_cache.bin')
-    );
-
-    let cacheStats;
-    let shouldUpdate = true;
-    const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
-
-    // Check cache age
-    if (fs.existsSync(cachePath)) {
-      cacheStats = fs.statSync(cachePath);
-      shouldUpdate = Date.now() - cacheStats.mtimeMs > CACHE_MAX_AGE;
-
-      if (!shouldUpdate) {
-        const cachedData = await fs.promises.readFile(cachePath);
-        try {
-          blockerCache = await ElectronBlocker.deserialize(cachedData);
-          console.log('Adblocker: Loaded from cache');
-        } catch (error) {
-          console.error('Cache deserialization failed, forcing update:', error);
-          shouldUpdate = true;
-        }
-      }
-    }
-
-    if (shouldUpdate) {
-      console.log('Adblocker: Updating filters...');
-      const fetchFn = typeof fetch === 'function' ? fetch : fetch.default;
-      blockerCache = await ElectronBlocker.fromLists(fetchFn, activeLists, {
-        enableCompression: true,
-        path: cachePath,
-        read: fs.promises.readFile,
-        write: fs.promises.writeFile,
-        loadNetworkFilters: true,
-        loadCosmeticFilters: false, // Disable cosmetic filtering for better performance
-        loadExtendedSelectors: false, // Disable extended selectors for better performance
-        maxLoadRetries: 2, // Limit retries for failed filter downloads
-        integrityCheck: false, // Disable integrity checks for faster loading
-      });
-
-      // Save updated cache
-      const serialized = await blockerCache.serialize();
-      await fs.promises.writeFile(cachePath, serialized);
-      console.log('Adblocker: Cache updated');
-    }
-
-    // Enable blocking for all sessions
-    const sessions = BrowserWindow.getAllWindows()
-      .map((window) => window.webContents.session)
-      .filter(Boolean); // Filter out any null/undefined sessions
-
-    for (const session of sessions) {
-      try {
-        blockerCache.enableBlockingInSession(session);
-      } catch (error) {
-        console.error(`Failed to enable blocking for session:`, error);
-      }
-    }
-
-    return blockerCache;
-  } catch (error) {
-    console.error('Adblocker: Critical error:', error);
-    throw error; // Propagate error for proper handling
-  }
+// appendSwitch('disable-features', …) REPLACES any prior value rather than
+// merging, so every feature name has to go through here or the last writer
+// silently wins.
+function disableChromiumFeature(name) {
+  const existing = app.commandLine.getSwitchValue('disable-features');
+  const names = existing ? existing.split(',').filter(Boolean) : [];
+  if (names.includes(name)) return;
+  names.push(name);
+  app.commandLine.appendSwitch('disable-features', names.join(','));
 }
 
-// Function to disable the adblocker
-function disableAdblocker() {
-  if (blocker) {
-    const sessions = BrowserWindow.getAllWindows().map((window) => window.webContents.session);
-    sessions.forEach((session) => {
-      blocker.disableBlockingInSession(session);
-    });
-    console.log('Adblocker: disabled');
-
-    blocker = null;
-    intervalId = null;
-  }
+// Windows marks a hidden window occluded and releases its compositor surface;
+// the webview panes then come back blank on unhide until the app restarts.
+if (process.platform === 'win32') {
+  disableChromiumFeature('CalculateNativeWinOcclusion');
 }
 
-// Setup main window and all basic elements
+// Whitelist HTTP origins from space URLs before app is ready
+const httpAllowlistService = require('./services/HttpAllowlistService');
+const browsingPrivacy = require('./services/BrowsingPrivacyService');
+const sessionService = require('./services/SessionService');
+httpAllowlistService.applyStartupSwitch(app);
+
+// Windows taskbar integration
 if (os.platform() === 'win32') {
   app.setUserTasks([
     {
@@ -298,60 +137,73 @@ if (os.platform() === 'win32') {
       description: 'InstantCognition',
     },
   ]);
-
-  // Assuming you have a way to capture the user's preference, call this function with true to enable or false to disable
-  // setLaunchAtStartup(true); // To enable
-  // setLaunchAtStartup(false); // To disable
 }
 
-// Example function to set the app to launch at startup
-function setLaunchAtStartup(enable) {
-  app.setLoginItemSettings({
-    openAtLogin: enable,
-    openAsHidden: enable,
-  });
-}
+// Debounce utility
+const debounce = (func, wait) => {
+  let timeout;
+  return /** @this {unknown} */ function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+};
 
-// Helper function to ensure config directory exists
-function ensureConfigDirectory(configPath) {
-  const dir = path.dirname(configPath);
-  if (!fs.existsSync(dir)) {
-    try {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log('Created config directory:', dir);
-    } catch (error) {
-      console.error('Failed to create config directory:', error);
-    }
+// Host chords forwarded to the renderer while a webview has keyboard focus:
+// the guest swallows the keydown, so the renderer's document listener never
+// sees it. User remaps in settings.shortcuts win over these defaults.
+const FORWARDED_SHORTCUT_DEFAULTS = { 'view.flip': 'CmdOrCtrl+E', 'panel.chat': 'CmdOrCtrl+Shift+A' };
+
+function acceleratorMatchesInput(accel, input, platform) {
+  if (typeof accel !== 'string' || !accel) return false;
+  const want = { meta: false, control: false, alt: false, shift: false };
+  let key = null;
+  for (const raw of accel.split('+')) {
+    const p = raw.trim().toLowerCase();
+    if (p === 'cmdorctrl' || p === 'commandorcontrol') want[platform === 'darwin' ? 'meta' : 'control'] = true;
+    else if (p === 'cmd' || p === 'command' || p === 'meta' || p === 'super') want.meta = true;
+    else if (p === 'ctrl' || p === 'control') want.control = true;
+    else if (p === 'alt' || p === 'option') want.alt = true;
+    else if (p === 'shift') want.shift = true;
+    else if (p) key = p;
   }
+  if (!key) return false;
+  if (!!input.meta !== want.meta || !!input.control !== want.control
+    || !!input.alt !== want.alt || !!input.shift !== want.shift) return false;
+  const typed = String(input.key || '').toLowerCase();
+  // Alt/Option rewrites input.key on macOS (Alt+E types a dead key), so the
+  // physical code is the reliable source for letters and digits.
+  const code = /^(?:Key|Digit)([A-Z0-9])$/.exec(String(input.code || ''));
+  return typed === key || (key === 'space' && typed === ' ') || (!!code && code[1].toLowerCase() === key);
 }
 
-// Optimize window creation
+function forwardedShortcutFor(input, shortcuts, platform) {
+  const remaps = shortcuts && typeof shortcuts === 'object' ? shortcuts : {};
+  for (const [action, fallback] of Object.entries(FORWARDED_SHORTCUT_DEFAULTS)) {
+    const entry = remaps[action];
+    const accel = typeof entry === 'string' ? entry
+      : (entry && typeof entry === 'object' && typeof entry.key === 'string' ? entry.key : fallback);
+    if (acceleratorMatchesInput(accel, input, platform)) return action;
+  }
+  return null;
+}
+
+// --- Main Window Creation ---
+let mainWindow;
+const appInstance = new App();
+
 function createMainWindow() {
   console.log('Creating main window...');
-  // Load window bounds from config
-  // Config is now handled by ConfigService
   const config = configService.getAll();
-  
-  // Ensure state and settings objects exist for backward compatibility
   if (!config.state) config.state = {};
   if (!config.settings) config.settings = {};
 
-  // Use saved bounds or defaults
-  const bounds = (config && config.state && config.state.windowBounds) || {
+  const bounds = (config.state && config.state.windowBounds) || {
     width: 1600,
     height: 900,
   };
-  console.log('Window bounds:', bounds);
 
-  // Cache session for better performance
   const sess = require('electron').session.defaultSession;
-  const preloadPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'app', 'main', 'preload.js')
-    : path.join(__dirname, 'preload.js');
-
-  console.log('Preload script path:', preloadPath);
-
-  // Note: Preload script is now set in webPreferences instead of session
   sess.enableNetworkEmulation({ offline: false });
 
   mainWindow = new BrowserWindow({
@@ -359,291 +211,482 @@ function createMainWindow() {
     hasShadow: false,
     fullScreenable: false,
     movable: true,
-    // Proper Stage Manager behavior
-    // Remove collection behavior entirely for macOS to avoid Stage Manager interactions
     collectionBehavior: undefined,
-    // Add other window properties that help with Stage Manager integration
-    alwaysOnTop: process.platform === 'darwin', // Make it always on top on macOS to avoid Stage Manager issues
+    alwaysOnTop: process.platform === 'darwin',
     webPreferences: {
-      preload: app.isPackaged
-        ? path.join(process.resourcesPath, 'app', 'main', 'preload.js')
-        : path.join(__dirname, 'preload.js'),
-      webviewTag: true, // Enable the use of <webview> tag
-      contextIsolation: false,
-      nodeIntegration: true,
+      preload: path.join(__dirname, 'preload', 'shell.js'),
+      webviewTag: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false,
       enableRemoteModule: false,
       nodeIntegrationInWorker: false,
       nodeIntegrationInSubFrames: false,
       safeDialogs: true,
-      backgroundThrottling: false,
+      // Chromium's own page-visibility path drops rAF/setInterval to idle in
+      // every hidden webview — this is where the hidden-window CPU savings come
+      // from, and it must stay declared here rather than pushed at runtime.
+      // visibilityThrottling.js explains why re-asserting it via
+      // setBackgroundThrottling on a hidden widget blanks the panes.
+      backgroundThrottling: true,
       offscreen: false,
-      // Add performance optimizations
       enablePreferredSizeMode: true,
-      spellcheck: false, // Disable if not needed
+      spellcheck: false,
       enableWebSQL: false,
       v8CacheOptions: 'code',
     },
     icon: app.isPackaged
       ? path.join(process.resourcesPath, 'assets/icon.ico')
       : path.join(__dirname, '../assets/icon.ico'),
-    navigateOnDragDrop: false, // Disable file access through drag and drop
-    enableFileSystemAccess: false, // Restrict file system access
-    // Optimize window performance
-    show: false, // Wait until ready-to-show
-    paintWhenInitiallyHidden: true,
+    navigateOnDragDrop: false,
+    enableFileSystemAccess: false,
+    show: false,
+    paintWhenInitiallyHidden: false,
     backgroundColor: '#1e1e1e',
-    // Add window optimizations
     minimizable: true,
     frame: true,
   });
+  ipcSenderPolicy.trustShell(mainWindow.webContents);
 
-  // Handle window close event
   mainWindow.on('close', (event) => {
-    // Only prevent close and hide if we're not actually quitting
-    if (!isAppQuitting) {
+    if (!appInstance.isAppQuitting) {
       event.preventDefault();
       mainWindow.hide();
     }
   });
 
-  // Prevent file drop
+  // The shell's IPC bridge reaches every main-process channel, so it must only
+  // ever show index.html. Any other top-level navigation (a stray link, a
+  // location assignment from rendered content) would hand a page that bridge.
+  const shellIndexUrl = pathToFileURL(path.join(__dirname, '../index.html')).href;
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (url.startsWith('file:')) {
-      event.preventDefault();
-    }
+    if (String(url).split(/[?#]/)[0] !== shellIndexUrl) event.preventDefault();
   });
 
-  // Prevent opening files
+  // The only sub-frames in the shell are sandboxed artifact iframes on
+  // ic-artifact://frame/. CSP cannot stop a frame navigating itself, so pin
+  // them to staged documents.
+  mainWindow.webContents.on('will-frame-navigate', (event) => {
+    if (event.isMainFrame) return;
+    if (!String(event.url).startsWith(`${ARTIFACT_FRAME_ORIGIN}/`) && event.url !== 'about:blank') event.preventDefault();
+  });
+  // Artifact frames scrub the RTC constructors, but a frame reached through
+  // window[n] before the scrub runs keeps them; no shell UI uses WebRTC, so
+  // keep any ICE traffic off direct UDP.
+  mainWindow.webContents.setWebRTCIPHandlingPolicy('disable_non_proxied_udp');
+
+  // Shell links (chat answers force target=_blank) open as in-app tabs; a bare
+  // BrowserWindow would land under the floating main window on macOS.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('file:')) {
-      return { action: 'deny' };
-    }
-    return { action: 'allow' };
+    if (/^https?:/i.test(url)) routeToNewTab(url);
+    return { action: 'deny' };
   });
 
-  // Add drop prevention for the window
-  // TODO: Fix TypeScript types for these events
-  // mainWindow.webContents.on('drop', (event) => {
-  //   event.preventDefault();
-  // });
+  // Every guest's preload and prefs are set here, whatever the renderer's
+  // attributes say, so the shell can never attach a guest with Node or a
+  // foreign preload.
+  mainWindow.webContents.on('will-attach-webview', (_event, webPreferences) => {
+    webPreferences.preload = path.join(__dirname, 'preload.js');
+    webPreferences.nodeIntegration = false;
+    webPreferences.nodeIntegrationInSubFrames = false;
+    webPreferences.contextIsolation = true;
+  });
 
-  // mainWindow.webContents.on('dragover', (event) => {
-  //   event.preventDefault();
-  // });
-
-  // Set higher max listeners specifically for mainWindow
   mainWindow.setMaxListeners(50);
 
-  // Save window bounds when resized
-  mainWindow.on(
-    'resize',
-    debounce(() => {
-      const bounds = mainWindow.getBounds();
-      
-      // Save window bounds to config
-      configService.set('state', {
-        ...configService.get('state', {}),
-        windowBounds: {
-          width: bounds.width,
-          height: bounds.height,
-        }
-      });
-    }, 100)
-  );
+  // Preserve window position across hide/show and app restarts.
+  // macOS repositions alwaysOnTop windows during show().
+  // Strategy: continuously track bounds while visible (reliable),
+  // then restore via setBounds both before and after show().
+  let savedBounds = null;
+  let isRestoring = false;
 
-  // Optimize memory usage and perform additional cleaning
-  // More aggressive memory management with lower threshold and smarter cleanup
-  setInterval(async () => {
-    try {
-      const memoryInfo = await process.getProcessMemoryInfo();
-      const memoryThreshold = 800 * 1024 * 1024; // Lower threshold to 800MB
-      const criticalThreshold = 1200 * 1024 * 1024; // Critical threshold at 1.2GB
-
-      const workingSetSize = memoryInfo.private || memoryInfo.residentSet || 0;
-      if (workingSetSize > memoryThreshold) {
-        if (!mainWindow.isVisible() || workingSetSize > criticalThreshold) {
-          // Clear non-essential caches first
-          await mainWindow.webContents.session.clearCache();
-          // Get list of inactive webviews
-          mainWindow.webContents.send('get-inactive-webviews');
-
-          // Clear other storage data only if memory usage is still high
-          const updatedMemoryInfo = await process.getProcessMemoryInfo();
-          const updatedWorkingSetSize = updatedMemoryInfo.private || updatedMemoryInfo.residentSet || 0;
-          if (updatedWorkingSetSize > memoryThreshold) {
-            await mainWindow.webContents.session.clearStorageData({
-              storages: ['appcache', 'shadercache', 'serviceworkers'],
-            });
-          }
-
-          // Force garbage collection
-          if (global.gc) {
-            global.gc();
-            // Spread out GC passes to reduce impact
-            setTimeout(() => global.gc(), 500);
-            // Final pass after a delay
-            setTimeout(() => global.gc(), 1000);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Memory management error:', error);
-    }
-  }, 120000); // Checks run every 2 minutes
-
-  // Additional cleaning tasks
-  setInterval(() => {
-    // Clear expired cookies
-    mainWindow.webContents.session.cookies.flushStore(() => {
-      console.log('Cookies store flushed');
+  // Save bounds to config AND in-memory on move/resize.
+  // Skip during restore cycles to avoid saving macOS-repositioned values.
+  const saveBoundsToConfig = debounce(() => {
+    if (isRestoring || mainWindow.isMinimized()) return;
+    const bounds = mainWindow.getBounds();
+    configService.set('state.windowBounds', {
+      x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height,
     });
-  }, 60 * 60); // 1 hour
+  }, 100);
 
-  // Show window only when ready
+  mainWindow.on('move', () => {
+    if (!isRestoring && mainWindow.isVisible() && !mainWindow.isMinimized()) {
+      savedBounds = mainWindow.getBounds();
+    }
+    saveBoundsToConfig();
+  });
+  mainWindow.on('resize', () => {
+    if (!isRestoring && mainWindow.isVisible() && !mainWindow.isMinimized()) {
+      savedBounds = mainWindow.getBounds();
+    }
+    saveBoundsToConfig();
+  });
+
+  // Wrap show() to restore position. The isRestoring flag prevents
+  // move/resize events during restoration from corrupting savedBounds.
+  const originalShow = mainWindow.show.bind(mainWindow);
+  mainWindow.show = () => {
+    isRestoring = true;
+    if (savedBounds) {
+      mainWindow.setBounds(savedBounds);
+    }
+    originalShow();
+    if (savedBounds) {
+      mainWindow.setBounds(savedBounds);
+    }
+    isRestoring = false;
+    // Force a full repaint of the window. Chromium can evict a long-hidden
+    // window's compositor frames, which is what leaves the webview panes blank
+    // on unhide; this is the API form of the "nudge the window and it comes
+    // back" workaround.
+    try { mainWindow.webContents.invalidate(); } catch (_) { /* window may be tearing down */ }
+    mainWindow.webContents.send('window-shown');
+  };
+
+  // Show window when ready
   mainWindow.once('ready-to-show', () => {
-    console.log('Window ready to show');
+    savedBounds = mainWindow.getBounds();
     mainWindow.show();
-    console.log('Window shown, visible:', mainWindow.isVisible());
-    
-    // Reset failure count on successful startup
     setTimeout(() => {
-      if (mainWindow.isVisible()) {
+      if (mainWindow.isVisible() && recoveryMode) {
         recoveryMode.resetFailureCount();
-        console.log('App started successfully, failure count reset');
       }
     }, 5000);
   });
-  
-  // Handle renderer errors
-  // TODO: Fix TypeScript type for crashed event
-  // mainWindow.webContents.on('crashed', () => {
-  //   recoveryMode.incrementFailureCount();
-  //   if (errorHandler && errorHandler.handleError) {
-  //     errorHandler.handleError('Renderer Process Crashed', new Error('WebContents crashed'), true);
-  //   }
-  // });
-  
+
+  // Log renderer errors
   mainWindow.webContents.on('console-message', (_, level, message, line, sourceId) => {
-    if (level === 3) { // Error level
-      if (errorHandler && errorHandler.logRendererError) {
-        errorHandler.logRendererError({
-          message,
-          source: `${sourceId}:${line}`,
-          level: 'error'
-        });
+    if (level === 3 && errorHandler && errorHandler.logRendererError) {
+      errorHandler.logRendererError({ message, source: `${sourceId}:${line}`, level: 'error' });
+    }
+  });
+
+  const sendNavigationToActiveView = (action) => {
+    if (action === NAVIGATION_ACTIONS.BACK) {
+      mainWindow.webContents.send('navigateBackActive');
+    } else if (action === NAVIGATION_ACTIONS.FORWARD) {
+      mainWindow.webContents.send('navigateForwardActive');
+    }
+  };
+
+  const navigateAttachedWebContents = (contents, action) => {
+    if (action === NAVIGATION_ACTIONS.BACK) {
+      contents.navigationHistory.goBack();
+    } else if (action === NAVIGATION_ACTIONS.FORWARD) {
+      contents.navigationHistory.goForward();
+    }
+  };
+
+  // macOS swipe gesture support (some mice trigger swipe events)
+  mainWindow.on('swipe', (_, direction) => {
+    sendNavigationToActiveView(getNavigationActionForSwipe(direction));
+  });
+
+  // Mouse/keyboard back/forward support (main window — fallback when no webview has focus)
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'mouseDown' && 'button' in input) {
+      sendNavigationToActiveView(getNavigationActionForElectronMouseButton(input.button));
+    }
+    // Cmd+[ / Cmd+] (Logitech and macOS standard back/forward)
+    if (input.type === 'keyDown') {
+      const action = getNavigationActionForKeyInput(input);
+      if (action) {
+        event.preventDefault();
+        sendNavigationToActiveView(action);
       }
     }
   });
 
-  mainWindow.webContents.on('did-attach-webview', (_, contents) => {
-    // Prevent file drops in webviews
-    // TODO: Fix TypeScript types for these events
-    // contents.on('drop', (event) => {
-    //   event.preventDefault();
-    // });
-
-    // contents.on('dragover', (event) => {
-    //   event.preventDefault();
-    // });
-
-    contents.on('will-navigate', (event, url) => {
-      if (url.startsWith('file:')) {
-        event.preventDefault();
-      }
-    });
-
-    contents.setWindowOpenHandler((details) => {
-      mainWindow.webContents.send('open-url', details.url);
-      return { action: 'deny' };
-    });
-
-    // Optimize IPC communications
-    // const throttledIPC = new Map();
-    // TODO: Re-enable when needed
-    // function throttleIPC(channel, data, wait = 16) {
-    //   if (throttledIPC.has(channel)) return;
-    //   mainWindow.webContents.send(channel, data);
-    //   throttledIPC.set(channel, true);
-    //   setTimeout(() => throttledIPC.delete(channel), wait);
-    // }
-
-    // Add timeout detection and refresh handling
-    let hasTimedOut = false;
-
-    contents.on('did-fail-load', (_, errorCode, errorDescription) => {
-      // if (errorCode) { // Any error code
-      if (errorCode === -7) {
-        // ERR_TIMED_OUT
-        contents.reload();
-        hasTimedOut = false;
-        console.log(`Page reloaded due to error ${errorCode}: ${errorDescription}`);
-      }
-    });
-
-    // Listen for any user interaction events (including window show/hide)
-    // TODO: Fix interaction event handling
-    // const interactionEvents = [
-    //   'mousedown',
-    //   'keydown',
-    //   'touchstart',
-    //   'wheel',
-    //   'mouseleave',
-    //   'mouseover',
-    //   'mouseenter',
-    // ];
-    // interactionEvents.forEach((eventType) => {
-    //   contents.on(eventType, () => {
-    //     if (hasTimedOut) {
-    //       contents.reload();
-    //       hasTimedOut = false;
-    //     }
-    //   });
-    // });
-
-    // Listen for window show event to check timeout
-    ['show', 'focus', 'restore', 'hide'].forEach((event) => {
-      mainWindow.on(event, () => {
-        if (hasTimedOut) {
-          contents.reload();
-          hasTimedOut = false;
-        }
+  // Global shortcut for Cmd+[/Cmd+] — catches keystrokes at the system level.
+  // This is the most aggressive approach: intercepts before any view processing.
+  // Registered only while the window is focused to avoid interfering with other apps.
+  const registerNavShortcuts = () => {
+    if (!globalShortcut.isRegistered('CommandOrControl+[')) {
+      // A false return means another app owns the combo; the menu
+      // accelerator + before-input-event paths still work, so log and move on.
+      const ok = globalShortcut.register('CommandOrControl+[', () => {
+        sendNavigationToActiveView(NAVIGATION_ACTIONS.BACK);
       });
+      if (!ok) console.warn('[NAV] Failed to register global CommandOrControl+[ shortcut');
+    }
+    if (!globalShortcut.isRegistered('CommandOrControl+]')) {
+      const ok = globalShortcut.register('CommandOrControl+]', () => {
+        sendNavigationToActiveView(NAVIGATION_ACTIONS.FORWARD);
+      });
+      if (!ok) console.warn('[NAV] Failed to register global CommandOrControl+] shortcut');
+    }
+  };
+  const unregisterNavShortcuts = () => {
+    globalShortcut.unregister('CommandOrControl+[');
+    globalShortcut.unregister('CommandOrControl+]');
+  };
+  mainWindow.on('focus', registerNavShortcuts);
+  mainWindow.on('blur', unregisterNavShortcuts);
+  if (mainWindow.isFocused()) registerNavShortcuts();
+
+  // Popup detection: window.open() with explicit width/height (or popup=yes) is
+  // treated as a real popup window (OAuth flows rely on this). Everything else
+  // is routed to an in-app tab so target=_blank / Ctrl+click act like a browser.
+  function looksLikePopup(features) {
+    if (!features) return false;
+    return /\b(?:width|height|popup)\s*=/i.test(features);
+  }
+
+  // Popup-path sends can fire after the main window's contents are destroyed
+  // (a webview's setWindowOpenHandler outlives the window); guard the same
+  // way the other send sites in this file do.
+  const sendToMainWindow = (channel, payload) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(channel, payload);
+    }
+  };
+
+  function routeToNewTab(url) {
+    sendToMainWindow('open-new-tab', url);
+  }
+
+  // A link out of a private tab (or a popup it opened) must stay in the
+  // in-memory session: a normal tab or the browser view would send its
+  // default-session cookies and record it in config and history.
+  function routeGuestLink(opener, url, disposition) {
+    if (sessionService.isPrivateContents(opener)) {
+      sendToMainWindow('open-new-tab', { url, private: true });
+    } else if (disposition === 'foreground-tab' || disposition === 'background-tab' || disposition === 'new-window') {
+      routeToNewTab(url);
+    } else {
+      // save-to-disk / other: the browser view pane or the system browser,
+      // per the openLinkExternal setting.
+      sendToMainWindow('open-url', url);
+    }
+  }
+
+  // window.open from a page or a popup it opened, at any depth. A real popup
+  // (OAuth, auth widgets) opens natively so window.opener and postMessage work,
+  // inheriting the opener's session as OAuth requires; everything else becomes
+  // an in-app tab, and file: is never reachable.
+  /** @returns {(details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse} */
+  function guestWindowOpenHandler(opener) {
+    return ({ url, disposition, features }) => {
+      if (url && url.startsWith('file:')) return { action: 'deny' };
+      if (disposition === 'new-window' && looksLikePopup(features)) {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            autoHideMenuBar: true,
+            webPreferences: { nodeIntegration: false, contextIsolation: true, webviewTag: false, sandbox: true },
+          },
+        };
+      }
+      routeGuestLink(opener, url, disposition);
+      return { action: 'deny' };
+    };
+  }
+
+  // Every popup gets the opener's policy, so a popup's own popups (OAuth ->
+  // 2FA provider) are held to the same rules however deep the chain goes.
+  function secureGuestWindow(popupWin) {
+    // Electron's window.open does not always bring the new window forward; on
+    // macOS the main window is alwaysOnTop at 'floating', so only a strictly
+    // higher level keeps a login popup above it.
+    const raise = () => {
+      try {
+        if (popupWin.isDestroyed && popupWin.isDestroyed()) return;
+        if (!popupWin.isVisible()) popupWin.show();
+        if (process.platform === 'darwin') popupWin.setAlwaysOnTop(true, 'modal-panel');
+        popupWin.moveTop();
+        popupWin.focus();
+      } catch (err) { console.error('[main] could not raise a pop-up window:', errMsg(err)); }
+    };
+    popupWin.once('ready-to-show', raise);
+    // Some providers never emit ready-to-show before the first paint finishes.
+    popupWin.webContents.once('did-finish-load', raise);
+    const popupContents = popupWin.webContents;
+    popupContents.on('will-navigate', (event, url) => {
+      if (url && url.startsWith('file:')) event.preventDefault();
+    });
+    popupContents.setWindowOpenHandler(guestWindowOpenHandler(popupContents));
+    popupContents.on('did-create-window', secureGuestWindow);
+  }
+
+  // Links from other apps wait in externalLinks until the renderer's IPC
+  // bridge is listening; a send before then is dropped.
+  mainWindow.webContents.on('did-finish-load', () => {
+    externalLinks.attach((url) => {
+      routeToNewTab(url);
+      revealMainWindow();
+    });
+  });
+  mainWindow.on('closed', () => externalLinks.detach());
+
+  // Webviews that hit ERR_TIMED_OUT and still owe a retry. One shared set plus
+  // one set of window listeners serves every tab: registering four mainWindow
+  // listeners per attached webview leaked them (nothing removed them on tab
+  // close) and walked into the max-listeners ceiling on long sessions.
+  const timedOutContents = new Set();
+  const retryTimedOutContents = () => {
+    if (timedOutContents.size === 0) return;
+    const pending = [...timedOutContents];
+    timedOutContents.clear();
+    for (const wc of pending) {
+      try { if (!wc.isDestroyed()) wc.reload(); } catch (_) { /* race on destroy */ }
+    }
+  };
+  ['show', 'focus', 'restore', 'hide'].forEach((event) => {
+    mainWindow.on(event, retryTimedOutContents);
+  });
+
+  // Bounds the reload loop when a guest crashes repeatedly on the same page.
+  const MAX_RENDERER_RESTARTS = 3;
+  const rendererRestarts = new WeakMap();
+
+  // Webview attach handler — link routing and file-access guard.
+  mainWindow.webContents.on('did-attach-webview', (_, contents) => {
+    contents.on('will-navigate', (event, url) => {
+      if (url.startsWith('file:')) event.preventDefault();
+    });
+
+    contents.on('audio-state-changed', (event) => {
+      try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('tab:audio-state', {
+            webContentsId: contents.id,
+            audible: !!event.audible,
+            muted: typeof contents.isAudioMuted === 'function' ? contents.isAudioMuted() : false,
+          });
+        }
+      } catch (_) { /* ignore */ }
+    });
+
+    contents.setWindowOpenHandler(guestWindowOpenHandler(contents));
+    contents.on('did-create-window', secureGuestWindow);
+
+    // Mouse and keyboard back/forward support for webviews.
+    // No canGoBack()/canGoForward() guards — these return false for SPA pushState
+    // navigations even though history.back() would succeed. goBack()/goForward()
+    // already no-op gracefully when there's truly no history.
+    contents.on('before-input-event', (event, input) => {
+      if (input.type === 'mouseDown' && 'button' in input) {
+        const action = getNavigationActionForElectronMouseButton(input.button);
+        if (action) navigateAttachedWebContents(contents, action);
+      }
+      if (input.type === 'keyDown') {
+        const forwarded = forwardedShortcutFor(input, configService.get('settings.shortcuts', {}), process.platform);
+        if (forwarded) {
+          event.preventDefault();
+          // A held chord would flip the layout on every repeat.
+          if (!input.isAutoRepeat) sendToMainWindow('shortcut:forwarded', { action: forwarded });
+          return;
+        }
+        const action = getNavigationActionForKeyInput(input);
+        if (action) {
+          event.preventDefault();
+          navigateAttachedWebContents(contents, action);
+        }
+      }
+    });
+
+    // Inject mouse back/forward handler into the webview's main world.
+    // This is needed because on macOS, mouse button events may not reach
+    // the preload's isolated world. Injecting into the main world ensures
+    // the handler runs even if contextIsolation blocks preload listeners.
+    const injectMouseNavHandler = () => {
+      contents.executeJavaScript(`
+        if (!window.__icMouseNav) {
+          window.__icMouseNav = true;
+          window.addEventListener('pointerdown', function(e) {
+            if (e.button === ${DOM_MOUSE_BUTTONS.BACK}) { e.preventDefault(); history.back(); }
+            else if (e.button === ${DOM_MOUSE_BUTTONS.FORWARD}) { e.preventDefault(); history.forward(); }
+          }, true);
+          window.addEventListener('mousedown', function(e) {
+            if (e.button === ${DOM_MOUSE_BUTTONS.BACK}) { history.back(); }
+            else if (e.button === ${DOM_MOUSE_BUTTONS.FORWARD}) { history.forward(); }
+          }, true);
+        }
+      `).catch(() => { /* ignore — injected handler is best-effort; main nav still works without it */ });
+    };
+    contents.on('dom-ready', injectMouseNavHandler);
+    if (!contents.isLoading()) injectMouseNavHandler();
+
+    contents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (errorCode === -7) {
+        contents.reload();
+        // Mark the timeout so the next window show/focus/restore reloads again
+        // in case the immediate reload failed silently (offline, captive portal,
+        // hung DNS). Cleared on did-start-loading.
+        timedOutContents.add(contents);
+        return;
+      }
+      // Anything else on the MAIN frame surfaces a "site blocked / can't load"
+      // popup so the user can choose to retry or allowlist the site. We skip
+      // ERR_ABORTED (-3) — that fires when the user navigates away mid-load,
+      // and showing a popup in that case would be noise.
+      if (!isMainFrame) return;
+      if (errorCode === -3) return;
+      if (!validatedURL || /^(about:|chrome:|devtools:|ic:|data:|file:)/i.test(validatedURL)) return;
+      if (browsingPrivacy.isUpgradeCancel(contents, validatedURL)) return;
+      try {
+        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+          mainWindow.webContents.send('site-blocked:show', {
+            webContentsId: contents.id,
+            url: validatedURL,
+            errorCode,
+            errorDescription: errorDescription || '',
+            httpFallback: browsingPrivacy.httpFallbackFor(contents, validatedURL),
+            httpsDowngrade: browsingPrivacy.isDowngradeCancel(contents, validatedURL),
+          });
+        }
+      } catch (_) { /* renderer may not be ready yet */ }
+    });
+
+    // A crashed or OOM-killed guest renderer otherwise leaves the pane blank
+    // until the whole app restarts — the app-level handler in errorHandler only
+    // logs it.
+    contents.on('render-process-gone', (_e, details) => {
+      const reason = (details && details.reason) || 'unknown';
+      if (reason === 'clean-exit') return;
+      const attempts = (rendererRestarts.get(contents) || 0) + 1;
+      rendererRestarts.set(contents, attempts);
+      if (attempts > MAX_RENDERER_RESTARTS) {
+        console.error(`Webview renderer gone (${reason}); giving up after ${MAX_RENDERER_RESTARTS} reloads`);
+        return;
+      }
+      console.error(`Webview renderer gone (${reason}); reloading (attempt ${attempts})`);
+      try { if (!contents.isDestroyed()) contents.reload(); } catch (_) { /* race on destroy */ }
+    });
+
+    contents.on('did-finish-load', () => {
+      rendererRestarts.delete(contents);
     });
 
     contents.on('did-start-loading', () => {
-      hasTimedOut = false;
+      timedOutContents.delete(contents);
+    });
+
+    contents.on('destroyed', () => {
+      timedOutContents.delete(contents);
     });
   });
 
-  // Capture mouse events globally
-  mainWindow.webContents.on('before-input-event', (_, input) => {
-    if (input.type === 'mouseDown') {
-      const webview = mainWindow.webContents.send('navigateBackCognitizer'); // Get the currently active webview
-
-      // Detect mouse back/forward buttons
-      if ('button' in input && input.button === 'back') {
-        if (webview && webview.canGoBack()) {
-          webview.goBack();
-        }
-      } else if ('button' in input && input.button === 'forward') {
-        if (webview && webview.canGoForward()) {
-          webview.goForward();
-        }
-      }
-    }
-  });
-
+  // Load the app HTML
   const htmlPath = path.join(__dirname, '../index.html');
-  console.log('Loading HTML from:', htmlPath);
-
   if (!fs.existsSync(htmlPath)) {
-    console.error('index.html not found at:', htmlPath);
     dialog.showErrorBox('File Not Found', `Cannot find index.html at: ${htmlPath}`);
   } else {
+    // This promise stays pending until every guest <webview> settles, which for
+    // a streaming site can be minutes. Quitting inside that window rejects it
+    // with ERR_FAILED/ERR_ABORTED — teardown, not a load failure. Escalating it
+    // pops a modal error dialog that then blocks the very quit that caused it
+    // (observed hanging shutdown for ~30s and segfaulting).
+    const loadingWindow = mainWindow;
     mainWindow.loadFile(htmlPath).catch((error) => {
-      console.error('Failed to load index.html:', error);
+      if (appInstance.isAppQuitting || !loadingWindow || loadingWindow.isDestroyed()) {
+        console.warn('index.html load aborted during shutdown:', (error instanceof Error && error.message) || error);
+        return;
+      }
       if (errorHandler && errorHandler.handleError) {
         errorHandler.handleError('Failed to load index.html', error, true);
       } else {
@@ -653,1133 +696,135 @@ function createMainWindow() {
   }
 }
 
-// Prevent a second instance from running
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  console.log('Another instance is already running');
-  process.exit(0);
-} else {
-  console.log('Got single instance lock');
-}
+// Single instance lock is handled in main.js (entry point)
 
-let shortcutToggleWindow = 'CmdOrCtrl+Space';
-let shortcutLock = 'CmdOrCtrl+Alt+L';
-let quitAppShortcut = 'CmdOrCtrl+Q';
-
-// Add this function to load shortcuts from config
-function loadShortcuts() {
-  try {
-    let configPath;
-    if (app.isPackaged) {
-      configPath = path.join(app.getPath('userData'), 'config.json');
-    } else {
-      configPath =
-        os.platform() === 'darwin'
-          ? path.join(os.homedir(), '.instant-cognition', 'config.json')
-          : path.join(__dirname, '..', 'config.json');
-    }
-
-    let config = {};
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    }
-
-    // Load shortcuts with defaults if not found
-    // Handle both legacy format (string) and new format (object with key property)
-    const loadShortcutKey = (shortcutData) => {
-      if (typeof shortcutData === 'string') {
-        return shortcutData;
-      } else if (shortcutData && typeof shortcutData === 'object' && shortcutData.key) {
-        return shortcutData.key;
-      }
-      return null;
-    };
-
-    const toggleShortcutFromConfig = 
-      config?.settings?.shortcuts?.toggleShortcut || 
-      config?.settings?.shortcuts?.['window.toggle'];
-    shortcutToggleWindow = loadShortcutKey(toggleShortcutFromConfig) || shortcutToggleWindow;
-    
-    const lockShortcutFromConfig = 
-      config?.settings?.shortcuts?.shortcutLock || 
-      config?.settings?.shortcuts?.['window.lock'];
-    shortcutLock = loadShortcutKey(lockShortcutFromConfig) || shortcutLock;
-
-    // Save defaults if they weren't in config
-    if (!config) config = { state: {}, settings: {} };
-    if (!config.settings) config.settings = {};
-    if (!config.settings.shortcuts) {
-      config.settings.shortcuts = {};
-    }
-    
-    // Only save legacy shortcuts if neither legacy nor new format exists
-    let configChanged = false;
-    if (!config.settings.shortcuts.toggleShortcut && !config.settings.shortcuts['window.toggle']) {
-      config.settings.shortcuts['window.toggle'] = {
-        key: shortcutToggleWindow,
-        description: 'Toggle Window'
-      };
-      configChanged = true;
-    }
-    if (!config.settings.shortcuts.shortcutLock && !config.settings.shortcuts['window.lock']) {
-      config.settings.shortcuts['window.lock'] = {
-        key: shortcutLock,
-        description: 'Lock Shortcuts'
-      };
-      configChanged = true;
-    }
-    
-    if (configChanged) {
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    }
-  } catch (error) {
-    console.error('Error loading shortcuts:', error);
-    // Use defaults if loading fails
-    shortcutToggleWindow = shortcutToggleWindow;
-    shortcutLock = shortcutLock;
-  }
-}
-
-const toggleWindow = () => {
-  if (mainWindow.isVisible()) {
-    if (process.platform === 'darwin') {
-      // On macOS, check if Stage Manager is enabled
-      let stageManagerEnabled = false;
-
-      try {
-        // Try to read Stage Manager setting
-        const result = execSync('defaults read com.apple.WindowManager GloballyEnabled')
-          .toString()
-          .trim();
-        stageManagerEnabled = result === '1';
-      } catch (error) {
-        // If command fails, assume Stage Manager is not enabled
-        console.log('Could not detect Stage Manager status:', error);
-      }
-
-      if (stageManagerEnabled) {
-        // If Stage Manager is enabled, just hide the window to avoid issues
-        mainWindow.hide();
-      } else {
-        // If Stage Manager is not enabled, use normal toggle behavior
-        if (mainWindow.isFocused()) {
-          mainWindow.hide();
-        } else {
-          mainWindow.focus();
-        }
-      }
-    } else {
-      // On other platforms, maintain the focus/hide toggle behavior
-      if (mainWindow.isFocused()) {
-        mainWindow.hide();
-      } else {
-        mainWindow.focus();
-      }
-    }
-  } else {
-    mainWindow.show();
-  }
-};
-
-// let shortcutsRegistered = false;
-let currentTimestampShortcut = Date.now();
-// Register a single global shortcut to toggle the window
-const registerToggleShortcut = () => {
-  globalShortcut.register(shortcutToggleWindow, () => {
-    if (Date.now() - currentTimestampShortcut < 50) return;
-
-    toggleWindow();
-
-    currentTimestampShortcut = Date.now();
-  });
-  // shortcutsRegistered = true;
-};
-
-function unregisterToggleShortcut() {
-  globalShortcut.unregister(shortcutToggleWindow);
-  // shortcutsRegistered = false;
-}
-
-let toggleLocked = false;
-let currentTimestampShortcutLock = Date.now();
-// Register shortcut lock
-const registerShortcutLock = () => {
-  globalShortcut.register(shortcutLock, () => {
-    if (Date.now() - currentTimestampShortcutLock < 100) return;
-
-    if (toggleLocked) {
-      toggleLocked = false;
-      registerToggleShortcut();
-    } else {
-      toggleLocked = true;
-      unregisterToggleShortcut();
-    }
-
-    currentTimestampShortcutLock = Date.now();
-  });
-};
-
-// Optimize event listeners by debouncing
-const debounce = (func, wait) => {
-  let timeout;
-  return function (...args) {
-    const context = this;
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(context, args), wait);
-  };
-};
-
+// --- App Ready ---
 app.whenReady().then(async () => {
-  // Check if we should start in recovery mode
-  if (recoveryMode.checkRecoveryMode()) {
+  // Recovery mode check
+  if (recoveryMode && recoveryMode.checkRecoveryMode()) {
     console.log('Starting in recovery mode...');
     recoveryMode.createRecoveryWindow();
     recoveryMode.setupRecoveryHandlers();
-    return; // Don't start normal app
+    return;
   }
-  
-  // Initialize error handler
+
+  // Initialize error logging
   try {
-    errorLogPath = errorHandler.initialize();
-    console.log('Error logging initialized:', errorLogPath);
+    if (errorHandler) errorHandler.initialize();
   } catch (error) {
     console.error('Failed to initialize error handler:', error);
   }
-  
-  console.log('App ready, packaged:', app.isPackaged);
-  console.log('App path:', app.getAppPath());
-  console.log('Resources path:', process.resourcesPath);
-  console.log('__dirname:', __dirname);
 
-  // Temporarily disable updater to debug startup
-  /*
-  try {
-    // Run npm package updater
-    const updaterPath = path.join(__dirname, '../updater.js');
-    const { runUpdater } = require(updaterPath);
-    console.log('Running npm package updater...');
-    await runUpdater();
-    console.log('npm package update complete');
-  } catch (error) {
-    console.error('Failed to update npm packages:', error);
-  }
-  */
-  console.log('[MAIN] Skipping updater for debugging');
-
-  // Load shortcuts before registering them
-  loadShortcuts();
-
-  // Optimize V8
+  // V8 optimization
   v8.setFlagsFromString('--max-old-space-size=4096');
   v8.setFlagsFromString('--optimize-for-size');
 
-  acceptedCertificatesPath =
-    os.platform() === 'darwin'
-      ? path.join(os.homedir(), '.instant-cognition', 'trusted_certificates.json')
-      : path.join(__dirname, '../../trusted_certificates.json');
-
-  // acceptedCertificatesPathOrig removed - unused variable
-
-  // Load accepted certificates on app start
-  function loadAcceptedCertificates() {
-    try {
-      if (fs.existsSync(acceptedCertificatesPath)) {
-        const data = fs.readFileSync(acceptedCertificatesPath, 'utf8');
-        acceptedCertificates = JSON.parse(data);
-      }
-    } catch (error) {
-      console.error('Failed to load accepted certificates:', error);
-    }
-  }
-
-  loadAcceptedCertificates();
-
+  // Create the main window
   try {
     createMainWindow();
   } catch (error) {
     console.error('Failed to create main window:', error);
-    recoveryMode.incrementFailureCount();
+    if (recoveryMode) recoveryMode.incrementFailureCount();
     if (errorHandler && errorHandler.handleError) {
       errorHandler.handleError('Window Creation Failed', error, true);
     } else {
       dialog.showErrorBox('Window Creation Error', `Failed to create window: ${error instanceof Error ? error.message : String(error)}`);
     }
-    isAppQuitting = true;
+    appInstance.isAppQuitting = true;
     app.quit();
+    return;
   }
 
-  registerToggleShortcut();
-  registerShortcutLock();
+  // Initialize all services and IPC handlers via App
+  appInstance.initialize(mainWindow, { errorHandler, recoveryMode });
+  appInstance.setupLifecycleHandlers();
+
+  // Background-throttling policy: throttle every webContents while the window
+  // is hidden (frees CPU/GPU for foreground workloads), but lift throttling
+  // during an active agent run so LLM streaming and executeJavaScript keep working.
+  try {
+    const { session } = require('electron');
+    const agentService = require('./services/AgentService');
+    visibilityThrottling.bind({ mainWindow, session: session && session.defaultSession, agentService });
+
+    // Park heavyweight background work while the window is hidden. The
+    // pub-sub is gated by the same agent-active override that controls
+    // backgroundThrottling, so an in-flight agent run keeps its engine.
+    // Hooks may run when no engine is loaded — the service methods are no-ops
+    // in that case; we surface unexpected errors instead of swallowing them.
+    try {
+      const llmService = require('./services/LLMService');
+      visibilityThrottling.onSuspend(() => {
+        try { llmService.pauseForVisibility(); }
+        catch (err) { console.error('LLM pauseForVisibility failed:', errMsg(err)); }
+      });
+      visibilityThrottling.onResume(() => {
+        llmService.resumeFromVisibility().catch((err) => console.error('LLM resumeFromVisibility failed:', errMsg(err)));
+      });
+    } catch (err) { console.error('Failed to bind LLM visibility hooks:', err instanceof Error ? err.message : err); }
+
+    try {
+      const mcpService = require('./services/McpService');
+      visibilityThrottling.onSuspend(() => {
+        mcpService.pauseForVisibility().catch((err) => console.error('MCP pauseForVisibility failed:', errMsg(err)));
+      });
+      visibilityThrottling.onResume(() => {
+        mcpService.resumeFromVisibility().catch((err) => console.error('MCP resumeFromVisibility failed:', errMsg(err)));
+      });
+    } catch (err) { console.error('Failed to bind MCP visibility hooks:', err instanceof Error ? err.message : err); }
+  } catch (err) {
+    console.error('Failed to bind visibility throttling:', err instanceof Error ? err.message : err);
+  }
 
   app.setName('InstantCognition');
-  console.log('App name set to:', app.getName());
-
-  // Create tray icon for the windows system tray / macos tray
-  // Define the icon path based on the platform
-  let iconPath = path.join(__dirname, '../assets/icon');
-  if (os.platform() === 'win32') {
-    iconPath += '.ico'; // Use .ico format for Windows
-  } else {
-    iconPath += '.png'; // Use .png format for macOS
-  }
-
-  console.log('Loading tray icon from:', iconPath);
-
-  if (!fs.existsSync(iconPath)) {
-    console.error('Tray icon not found at:', iconPath);
-    // Try alternative path for packaged app
-    const alternativePath = app.isPackaged
-      ? path.join(process.resourcesPath, 'assets', path.basename(iconPath))
-      : iconPath;
-    console.log('Trying alternative path:', alternativePath);
-    if (fs.existsSync(alternativePath)) {
-      iconPath = alternativePath;
-    }
-  }
-
-  try {
-    const trayIcon = nativeImage.createFromPath(iconPath);
-    if (trayIcon.isEmpty()) {
-      console.error('Failed to load tray icon - image is empty');
-    } else {
-      if (os.platform() === 'win32') {
-        tray = new Tray(trayIcon);
-      } else {
-        tray = new Tray(trayIcon.resize({ width: 22, height: 22 }));
-      }
-      console.log('Tray icon created successfully');
-    }
-  } catch (error) {
-    console.error('Error creating tray icon:', error);
-  }
-
-  mainWindow.webContents.on('did-attach-webview', (_, contents) => {
-    contents.on('context-menu', (_, params) => {
-      const contextMenuRightClick = Menu.buildFromTemplate([
-        {
-          label: 'Copy',
-          role: 'copy',
-        },
-        {
-          label: 'Paste',
-          role: 'paste',
-        },
-        {
-          label: 'Find',
-          accelerator: 'CmdOrCtrl+F', // Display the keyboard shortcut in the menu
-          click: () => {
-            // Send IPC message to show the find bar
-            mainWindow.webContents.send('toggleFindBar');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Close',
-          accelerator: 'F7',
-          click: () => {
-            mainWindow.webContents.send('closeActiveWebview');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Back',
-          accelerator: 'F3',
-          click: () => {
-            mainWindow.webContents.send('navigateBackActive');
-          },
-        },
-        {
-          label: 'Forward',
-          accelerator: 'F4',
-          click: () => {
-            mainWindow.webContents.send('navigateForwardActive');
-          },
-        },
-        {
-          label: 'Refresh',
-          accelerator: 'F5',
-          click: () => {
-            mainWindow.webContents.send('refreshActive');
-          },
-        },
-        {
-          label: 'Home',
-          accelerator: 'F6',
-          click: () => {
-            mainWindow.webContents.send('navigateHomeReset');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Search / Open',
-          click: () => {
-            let searchText = contents.executeJavaScript('window.getSelection().toString().trim()');
-            searchText
-              .then((result) => {
-                if (result === '') {
-                  let url = contents.getURL();
-                  mainWindow.webContents.send('open-url', url);
-                } else if (result.startsWith('http://') || result.startsWith('https://')) {
-                  mainWindow.webContents.send('open-url', result);
-                } else {
-                  let searchParams = new URLSearchParams();
-                  searchParams.append('q', result);
-                  let url = `https://www.google.com/search?${searchParams.toString()}`;
-                  mainWindow.webContents.send('open-url', url);
-                }
-              })
-              .catch((error) => {
-                console.error(error);
-              });
-          },
-        },
-        {
-          label: 'Google',
-          click: () => {
-            mainWindow.webContents.send('navigate-to-url', { url: 'https://www.google.com' });
-          },
-        },
-        {
-          label: 'Visit URL',
-          click: () => {
-            // Get the cognitizer ID from the webview
-            require('electron-prompt')({
-              title: 'Visit URL',
-              label: 'Enter URL to visit:',
-              value: 'https://',
-              inputAttrs: {
-                type: 'text',
-              },
-              type: 'input',
-            })
-              .then((url) => {
-                if (url) {
-                  mainWindow.webContents.send('navigate-to-url', { url });
-                }
-              })
-              .catch(console.error);
-          },
-        },
-        { type: 'separator' },
-        // { label: 'Reset View', click: () => { mainWindow.webContents.send('resetView'); } },
-        {
-          label: 'Toggle View',
-          accelerator: 'F8',
-          click: () => {
-            mainWindow.webContents.send('toggleView');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Toggle Cognitizer',
-          click: () => {
-            mainWindow.webContents.send('toggleCognitizerView');
-          },
-        },
-        {
-          label: 'Toggle Browser',
-          click: () => {
-            mainWindow.webContents.send('toggleBrowserView');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Inspect',
-          click: () => {
-            contents.inspectElement(params.x, params.y);
-          },
-        },
-      ]);
-
-      contextMenuRightClick.popup({
-        window: mainWindow,
-        x: params.x,
-        y: params.y,
-      });
-    });
-  });
-
-  // Optimize tray icon context menu creation
-  const contextMenuTrayIcon = Menu.buildFromTemplate([
-    {
-      label: 'InstantCognition',
-      enabled: true,
-      click: () => {
-        if (mainWindow.isVisible()) {
-          mainWindow.hide();
-        } else {
-          mainWindow.show();
-        }
-      },
-    },
-    // add a seperator
-    { type: 'separator' },
-    {
-      label: 'Toggle Window',
-      accelerator: shortcutToggleWindow,
-      click: () => {
-        toggleWindow();
-      },
-    },
-    { type: 'separator' },
-    {
-      label: 'Toggle Lock',
-      accelerator: shortcutLock,
-      click: () => {
-        if (toggleLocked) {
-          toggleLocked = false;
-          registerToggleShortcut();
-        } else {
-          toggleLocked = true;
-          unregisterToggleShortcut();
-        }
-      },
-    },
-    { type: 'separator' },
-    { role: 'reload' },
-    { role: 'forceReload' },
-    { type: 'separator' },
-    {
-      label: 'Restart InstantCognition',
-      click: () => {
-        isAppQuitting = true;
-        app.relaunch();
-        app.quit();
-      },
-    },
-    {
-      label: 'Quit',
-      accelerator: quitAppShortcut,
-      click: () => {
-        isAppQuitting = true;
-        app.quit();
-      },
-    },
-  ]);
-
-  tray.setToolTip('InstantCognition');
-  tray.setContextMenu(contextMenuTrayIcon);
-
   mainWindow.focus();
-
-  // Create a menu template
-  const menuTemplate = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Restart App',
-          click: () => {
-            isAppQuitting = true;
-            app.relaunch();
-            app.quit();
-          },
-        },
-        {
-          label: 'Quit',
-          accelerator: quitAppShortcut,
-          click: () => {
-            isAppQuitting = true;
-            app.quit();
-          },
-        },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        // { role: 'delete' },
-        { type: 'separator' },
-        {
-          label: 'Find',
-          accelerator: 'CmdOrCtrl + F',
-          click: () => {
-            mainWindow.webContents.send('toggleFindBar');
-          },
-        },
-        {
-          label: 'Find Next',
-          accelerator: 'CmdOrCtrl + G',
-          click: () => {
-            mainWindow.webContents.send('findBarForward');
-          },
-        },
-        {
-          label: 'Find Previous',
-          accelerator: 'Shift + CmdOrCtrl + G',
-          click: () => {
-            mainWindow.webContents.send('findBarBack');
-          },
-        },
-        { type: 'separator' },
-        { role: 'selectAll' },
-        { type: 'separator' },
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'toggleSpellChecker' },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          label: 'Toggle Window',
-          accelerator: shortcutToggleWindow,
-          click: () => {
-            toggleWindow();
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Toggle Lock',
-          accelerator: shortcutLock,
-          click: () => {
-            if (toggleLocked) {
-              toggleLocked = false;
-              registerToggleShortcut();
-            } else {
-              toggleLocked = true;
-              unregisterToggleShortcut();
-            }
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Zoom In',
-          accelerator: 'CmdOrCtrl + =',
-          click: () => {
-            mainWindow.webContents.send('zoomInActive');
-          },
-        },
-        {
-          label: 'Zoom Out',
-          accelerator: 'CmdOrCtrl + -',
-          click: () => {
-            mainWindow.webContents.send('zoomOutActive');
-          },
-        },
-        {
-          label: 'Zoom Reset',
-          accelerator: 'CmdOrCtrl + 0',
-          click: () => {
-            mainWindow.webContents.send('zoomResetActive');
-          },
-        },
-        { type: 'separator' },
-        // { label: 'Reset View', click: () => { mainWindow.webContents.send('resetView'); } },
-        {
-          label: 'Toggle View',
-          accelerator: 'F8',
-          click: () => {
-            mainWindow.webContents.send('toggleView');
-          },
-        },
-        {
-          label: 'Close Browser',
-          click: () => {
-            mainWindow.webContents.send('closeBrowser');
-          },
-        },
-        {
-          label: 'Close Cognitizer',
-          click: () => {
-            mainWindow.webContents.send('closeActiveCognitizer');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Toggle MultiCognition',
-          click: () => {
-            mainWindow.webContents.send('toggleMultiCognition');
-          },
-        },
-        {
-          label: 'Toggle Cognitizer',
-          click: () => {
-            mainWindow.webContents.send('toggleCognitizerView');
-          },
-        },
-        {
-          label: 'Toggle Browser',
-          click: () => {
-            mainWindow.webContents.send('toggleBrowserView');
-          },
-        },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-        { role: 'toggledevtools' },
-      ],
-    },
-    {
-      label: 'Navigation',
-      submenu: [
-        {
-          label: 'Previous Cognitizer',
-          accelerator: 'F1',
-          click: () => {
-            mainWindow.webContents.send('select-previous-cognitizer');
-          },
-        },
-        {
-          label: 'Next Cognitizer',
-          accelerator: 'F2',
-          click: () => {
-            mainWindow.webContents.send('select-next-cognitizer');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Back',
-          accelerator: 'F3',
-          click: () => {
-            mainWindow.webContents.send('navigateBackActive');
-          },
-        },
-        {
-          label: 'Forward',
-          accelerator: 'F4',
-          click: () => {
-            mainWindow.webContents.send('navigateForwardActive');
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Refresh',
-          accelerator: ['F5', 'CmdOrCtrl + R'],
-          click: () => {
-            mainWindow.webContents.send('refreshActive');
-          },
-        },
-        {
-          label: 'Home',
-          accelerator: 'F6',
-          click: () => {
-            mainWindow.webContents.send('navigateHomeReset');
-          },
-        },
-        { type: 'separator' },
-      ],
-    },
-    {
-      label: 'Window',
-      role: 'windowMenu',
-      submenu: [
-        {
-          label: 'Toggle Lock',
-          accelerator: shortcutLock,
-          click: () => {
-            if (toggleLocked) {
-              toggleLocked = false;
-              registerToggleShortcut();
-            } else {
-              toggleLocked = true;
-              unregisterToggleShortcut();
-            }
-          },
-        },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-        { role: 'minimize' },
-        { role: 'close' },
-      ],
-    },
-    {
-      label: 'Help',
-      role: 'help',
-      submenu: [
-        {
-          label: 'InstantCognition GitHub',
-          click: async () => {
-            const { shell } = require('electron');
-            await shell.openExternal('https://github.com/Sellitus/InstantCognition');
-          },
-        },
-        {
-          label: 'Create a Bug Report',
-          click: async () => {
-            const { shell } = require('electron');
-            await shell.openExternal('https://github.com/Sellitus/InstantCognition/issues');
-          },
-        },
-        { type: 'separator' },
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { type: 'separator' },
-        {
-          label: 'Restart InstantCognition',
-          click: () => {
-            isAppQuitting = true;
-            app.relaunch();
-            app.quit();
-          },
-        },
-      ],
-    },
-  ];
-
-  // Build the menu from the template
-  const menu = Menu.buildFromTemplate(menuTemplate);
-
-  // Set the application menu
-  Menu.setApplicationMenu(menu);
 });
 
-function cleanupEventListeners() {
-  // Cleanup is handled in renderer process
-  // This function is kept for compatibility
+function revealMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isVisible()) mainWindow.show();
+  if (!mainWindow.isFocused()) mainWindow.focus();
+  mainWindow.webContents.send('window-shown');
 }
 
-// Handle certificate errors
-app.on('certificate-error', (event, _, url, error, certificate, callback) => {
-  event.preventDefault();
-
-  const domain = new URL(url).hostname;
-  const certFingerprint = certificate.fingerprint;
-
-  if (acceptedCertificates[domain]) {
-    if (acceptedCertificates[domain] === certFingerprint) {
-      callback(true);
-      return;
-    } else {
-      const options = {
-        type: 'warning',
-        buttons: ['Decline', 'Accept'],
-        defaultId: 0,
-        title: 'WARNING: Certificate Mismatch',
-        message: `WARNING: Certificate mismatch for ${domain}`,
-        detail: `The certificate presented by the site does not match the one previously accepted.\n\nError: ${error}\n\nCertificate:\nIssuer: ${certificate.issuerName}\nSubject: ${certificate.subjectName}\nFingerprint: ${certFingerprint}`,
-      };
-
-      dialog.showMessageBox(null, options).then((result) => {
-        if (result.response === 1) {
-          // Accept
-          acceptedCertificates[domain] = certFingerprint;
-          saveAcceptedCertificates();
-          callback(true);
-        } else {
-          // Decline
-          callback(false);
-        }
-      });
-      return;
-    }
-  }
-
-  const options = {
-    type: 'warning',
-    buttons: ['Decline', 'Accept'],
-    defaultId: 1,
-    title: 'Certificate Error',
-    message: `Certificate error for ${domain}`,
-    detail: `Error: ${error}\n\nCertificate:\nIssuer: ${certificate.issuerName}\nSubject: ${certificate.subjectName}\nFingerprint: ${certFingerprint}`,
-  };
-
-  dialog.showMessageBox(null, options).then((result) => {
-    if (result.response === 1) {
-      // Accept
-      acceptedCertificates[domain] = certFingerprint;
-      saveAcceptedCertificates();
-      callback(true);
-    } else {
-      // Decline
-      callback(false);
-    }
-  });
-});
-
-app.on('before-quit', async () => {
-  isAppQuitting = true;
-  try {
-    // Clear caches
-    await mainWindow.webContents.session.clearCache();
-    await mainWindow.webContents.session.clearStorageData({
-      storages: ['appcache', 'shadercache', 'serviceworkers'],
-    });
-
-    // Release memory
-    global.gc && global.gc();
-
-    // Check if we need to run the updater
-    const updaterPath = path.join(app.getAppPath(), 'updater.js');
-    if (fs.existsSync(updaterPath)) {
-      const { spawn } = require('child_process');
-      // Run the updater in a detached process
-      spawn(process.execPath, [updaterPath], {
-        detached: true,
-        stdio: 'inherit',
-      }).unref();
-    }
-  } catch (error) {
-    console.error('Error during shutdown:', error);
-  }
-  process.exit(0);
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
-});
-
-// Show currently open app if a second instance run is attempted
-app.on('second-instance', () => {
-  // Someone tried to run a second instance, we should show and focus our window.
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    if (!mainWindow.isVisible()) mainWindow.show();
-    if (!mainWindow.isFocused()) mainWindow.focus();
-  }
+// --- App Lifecycle ---
+app.on('second-instance', (_event, argv) => {
+  revealMainWindow();
+  externalLinks.openFromArgv(argv, 'second instance');
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    isAppQuitting = true;
+    appInstance.isAppQuitting = true;
     app.quit();
   }
 });
 
+// Squirrel.Mac's quitAndInstall closes every window before app 'before-quit'
+// fires; without the flag the close handler hides the window and cancels the
+// quit, so a downloaded update never installs.
+if (process.platform === 'darwin') {
+  require('electron').autoUpdater.on('before-quit-for-update', () => {
+    appInstance.isAppQuitting = true;
+  });
+}
+
 app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
-  cleanupEventListeners();
+  try { visibilityThrottling.dispose(); } catch (err) { console.error('visibilityThrottling dispose failed:', err instanceof Error ? err.message : err); }
+  // The quick launcher window is built lazily by its hotkey (ipc/launcherHandlers).
+  try { require('./launcher/launcherWindow').disposeLauncherWindow(); } catch (err) { console.error('launcher dispose failed:', err instanceof Error ? err.message : err); }
 });
 
-app.on('browser-window-created', (_, window) => {
-  // Multi-cognition resource management
-  const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
-  const cognitizerStates = new Map();
-
-  function freezeCognitizer(webContents) {
-    if (!webContents || webContents.isDestroyed()) return;
-
-    webContents.setBackgroundThrottling(true);
-    if (global.gc) global.gc();
-    console.log('Cognitizer frozen due to inactivity');
-  }
-
-  function unfreezeCognitizer(webContents) {
-    if (!webContents || webContents.isDestroyed()) return;
-
-    webContents.setBackgroundThrottling(false);
-    console.log('Cognitizer unfrozen');
-  }
-
-  // Handle cognitizer activity tracking
-  ipcMain.on('cognitizer-activity', (event, { cognitizerId, isActive }) => {
-    const webContents = event.sender;
-    const state = cognitizerStates.get(cognitizerId) || {};
-
-    if (isActive) {
-      // Clear any existing timeout
-      if (state.timeoutId) {
-        clearTimeout(state.timeoutId);
-      }
-      unfreezeCognitizer(webContents);
-      state.lastActivity = Date.now();
-    } else {
-      // Set timeout to freeze after inactivity
-      state.timeoutId = setTimeout(() => {
-        freezeCognitizer(webContents);
-      }, INACTIVITY_TIMEOUT);
-    }
-
-    cognitizerStates.set(cognitizerId, state);
-  });
-
-  // Cleanup when cognitizer is closed
-  ipcMain.on('cognitizer-closed', (_, { cognitizerId }) => {
-    const state = cognitizerStates.get(cognitizerId);
-    if (state && state.timeoutId) {
-      clearTimeout(state.timeoutId);
-    }
-    cognitizerStates.delete(cognitizerId);
-  });
-
-  window.on('minimize', () => {
-    window.webContents.setBackgroundThrottling(true);
-  });
-
-  window.on('restore', () => {
-    window.webContents.setBackgroundThrottling(false);
-  });
-});
-
-ipcMain.handle('call-isLaunchAtStartupEnabled', () => {
-  const settings = app.getLoginItemSettings();
-  return settings.openAtLogin;
-});
-
-ipcMain.on('call-createAndUpdateaAblocker', () => {
-  createAndUpdateBlocker().then((result) => {
-    blocker = result;
-  });
-  // Set up automatic updates (e.g., every 1 hour)
-  if (!intervalId) {
-    const UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
-    intervalId = setInterval(() => {
-      createAndUpdateBlocker().then((result) => {
-        if (result) {
-          blocker = result;
-        }
-      });
-    }, UPDATE_INTERVAL);
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createMainWindow();
+    appInstance.initialize(mainWindow, { errorHandler, recoveryMode });
+  } else if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
   }
 });
 
-ipcMain.on('call-disableAdblocker', () => {
-  disableAdblocker();
-  clearInterval(intervalId);
-});
-
-ipcMain.on('call-enableLaunchAtStartup', () => {
-  setLaunchAtStartup(true);
-});
-
-ipcMain.on('call-disableLaunchAtStartup', () => {
-  setLaunchAtStartup(false);
-});
-
-ipcMain.on('toggleCognitizerView', () => {
-  mainWindow.webContents.send('toggleCognitizerView');
-});
-
-ipcMain.on('toggleMultiCognition', () => {
-  mainWindow.webContents.send('toggleMultiCognition');
-});
-
-ipcMain.on('open-config-file', () => {
-  console.log('[MAIN] Received open-config-file IPC message');
-  let configPath;
-  
-  // Use platform-specific paths
-  if (os.platform() === 'darwin') {
-    // macOS: ~/.instant-cognition/config.json
-    configPath = path.join(os.homedir(), '.instant-cognition', 'config.json');
-  } else if (app.isPackaged) {
-    // Windows/Linux packaged: In the app's resources directory
-    configPath = path.join(process.resourcesPath, 'app', 'config.json');
-  } else {
-    // Development: Project root
-    configPath = path.join(__dirname, '..', 'config.json');
-  }
-
-  console.log('[MAIN] Opening config file:', configPath);
-  console.log('[MAIN] File exists:', fs.existsSync(configPath));
-  
-  // Ensure the file exists before trying to open it
-  if (fs.existsSync(configPath)) {
-    shell.openPath(configPath).then(() => {
-      console.log('[MAIN] Config file opened successfully');
-    }).catch((err) => {
-      console.error('[MAIN] Failed to open config file:', err);
-      dialog.showErrorBox('Error', 'Failed to open config file: ' + err.message);
-    });
-  } else {
-    console.error('[MAIN] Config file not found at:', configPath);
-    dialog.showErrorBox('Config File Not Found', `Config file not found at: ${configPath}`);
-  }
-});
-
-ipcMain.on('select-previous-cognitizer', () => {
-  mainWindow.webContents.send('select-previous-cognitizer');
-});
-
-ipcMain.on('select-next-cognitizer', () => {
-  mainWindow.webContents.send('select-next-cognitizer');
-});
-
-ipcMain.on('switch-cognitizer', (_, index) => {
-  // Add timestamp check with 100ms cooldown
-  const now = Date.now();
-  if (now - lastCognitizerSwitch < 100) {
-    return;
-  }
-  lastCognitizerSwitch = now;
-
-  const cognitizerId = index === 0 ? 'custom10' : `custom${index}`;
-  if (mainWindow) {
-    mainWindow.webContents.send('selectCognitizer', cognitizerId);
-  }
-});
-
-// Handle back navigation
-ipcMain.on('navigate-back', () => {
-  mainWindow.webContents.send('navigateBackActive');
-});
-
-// Handle forward navigation
-ipcMain.on('navigate-forward', () => {
-  mainWindow.webContents.send('navigateForwardActive');
-});
-
-// Handle refresh navigation
-ipcMain.on('navigate-refresh', () => {
-  mainWindow.webContents.send('refreshActive');
-});
-
-// Handle refresh navigation
-ipcMain.on('navigate-home', () => {
-  mainWindow.webContents.send('navigateHomeReset');
-});
-
-// Handle CTRL + F to show the find bar
-ipcMain.on('show-toggle-bar', () => {
-  mainWindow.webContents.send('toggleFindBar');
-});
-
-// Forward the close-find-bar event to the renderer process
-ipcMain.on('close-find-bar', () => {
-  mainWindow.webContents.send('close-find-bar');
-});
-ipcMain.on('refreshActive', () => {
-  mainWindow.webContents.send('refreshActive');
-});
-ipcMain.on('quitApp', () => {
-  isAppQuitting = true;
-  app.quit();
-});
-ipcMain.on('zoomInActive', () => {
-  mainWindow.webContents.send('zoomInActive');
-});
-ipcMain.on('zoomOutActive', () => {
-  mainWindow.webContents.send('zoomInActive');
-});
-ipcMain.on('zoomResetActive', () => {
-  mainWindow.webContents.send('zoomInActive');
-});
-ipcMain.on('restart-app', () => {
-  console.log('[MAIN] Received restart-app IPC message');
-  isAppQuitting = true;
-  console.log('[MAIN] Relaunching app...');
-  app.relaunch();
-  console.log('[MAIN] Quitting app...');
-  app.quit();
-});
-
-
-// Add IPC handler for renderer errors
-ipcMain.on('renderer-error', (_, errorInfo) => {
-  if (errorHandler && errorHandler.logRendererError) {
-    errorHandler.logRendererError(errorInfo);
-  }
-});
-
-// Add IPC handler for showing URL prompt
-ipcMain.on('show-url-prompt', (event) => {
-  require('electron-prompt')({
-    title: 'Visit URL',
-    label: 'Enter the URL to visit:',
-    value: 'https://',
-    inputAttrs: {
-      type: 'url',
-    },
-    type: 'input',
-  })
-    .then((url) => {
-      if (url) {
-        event.sender.send('navigate-to-url', { url });
-      }
-    })
-    .catch(console.error);
-});
+// Chromium throttles minimized windows on its own. Toggling
+// setBackgroundThrottling here would only desync its visibility state — see the
+// HAZARD note in services/visibilityThrottling.js.

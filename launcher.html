@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="stylesheet" href="main.combined.css">
+  <title>Quick Ask</title>
+</head>
+<body class="launcher-body theme-dark">
+  <main class="launcher" aria-label="Quick ask">
+    <form id="launcher-form" class="launcher-form" autocomplete="off">
+      <label class="launcher-field">
+        <span class="launcher-sr">Ask anything</span>
+        <input id="launcher-input" class="launcher-input" type="text" spellcheck="false" maxlength="100000">
+        <span id="launcher-hint" class="launcher-hint" aria-hidden="true">Ask anything…</span>
+      </label>
+    </form>
+    <div id="launcher-status" class="launcher-status" role="status" aria-live="polite" hidden></div>
+    <div id="launcher-answer" class="md launcher-answer" aria-live="polite"></div>
+    <footer class="launcher-footer">
+      <span class="launcher-keys"><kbd>↵</kbd> Ask <kbd><span id="launcher-mod-key">Ctrl</span>↵</kbd> Open in Assistant <kbd>Esc</kbd> Close</span>
+      <button id="launcher-open" class="launcher-open" type="button" hidden>Open in Assistant</button>
+    </footer>
+  </main>
+  <script src="launcher.bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+/* Icon — monochrome SVG icons rendered from the sprite installed by Icon.js */
+
+.icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  color: currentColor;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  pointer-events: none;
+}
+
+.icon-sm { width: var(--icon-size-sm); height: var(--icon-size-sm); }
+.icon-lg { width: var(--icon-size-lg); height: var(--icon-size-lg); }
+
+/* Small visual tweak: icons in LLM pill should match the pill's font flow */
+.chrome-llm-pill .icon {
+  width: 10px;
+  height: 10px;
+}

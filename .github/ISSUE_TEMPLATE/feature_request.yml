@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest a capability or a change to an existing one
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that the app makes hard or impossible?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like instead
+      description: Describe the behaviour you want, and where in the app it belongs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Workarounds you tried, or other designs you weighed.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Assistant / chat
+        - Agent
+        - Local model (llama.cpp / MLX)
+        - Model Hub
+        - Browsing (tabs, history, bookmarks, downloads)
+        - Extensions
+        - Voice / reader
+        - Settings
+        - Window, hotkey or tray
+        - Other
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this request
+          required: true

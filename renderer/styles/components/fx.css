@@ -1,0 +1,213 @@
+/* ============================================================
+   Visual effects (renderer/fx). Everything here is gated on the
+   body.fx-full / body.fx-subtle classes set by fx.applySettings(),
+   so Motion: Off (or any reduced-motion signal) removes it all.
+   Animations stick to transform / opacity / stroke-dashoffset.
+   ============================================================ */
+
+/* ---------- Shared transient canvas ---------- */
+.fx-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: var(--z-fx);
+}
+
+/* ---------- Live rim (generating / agent touching a pane) ---------- */
+.fx-rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+.fx-rim.is-on { opacity: 1; }
+.fx-rim rect {
+  x: 1px;
+  y: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  rx: var(--fx-rim-radius, 0px);
+  fill: none;
+  stroke: url(#fx-grad);
+  vector-effect: non-scaling-stroke;
+}
+.fx-rim-glow { stroke-width: 4; opacity: 0.2; }
+.fx-rim-line { stroke-width: 1; opacity: 0.5; }
+.fx-rim-comet {
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 14 86;
+  animation: fx-rim-orbit 2.6s linear infinite;
+}
+@keyframes fx-rim-orbit { to { stroke-dashoffset: -100; } }
+
+/* Software compositing: no orbiting stroke, just a slow breathe. */
+body.fx-lowpower .fx-rim-comet { display: none; }
+body.fx-lowpower .fx-rim.is-on { animation: fx-breathe 2.4s ease-in-out infinite; }
+@keyframes fx-breathe { 50% { opacity: 0.55; } }
+
+/* ---------- Summon edge glow ---------- */
+.fx-summon-edge {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-fx);
+  opacity: 0;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--brand-cyan-rgb), 0.5),
+    inset 0 0 36px rgba(var(--brand-cyan-rgb), 0.12),
+    inset 0 0 72px rgba(var(--brand-magenta-rgb), 0.07);
+}
+
+/* ---------- Cursor spotlight ---------- */
+body:is(.fx-full, .fx-subtle) :is(.command-palette-item, .new-tab-picker-card, .session-list__open) {
+  position: relative;
+}
+body:is(.fx-full, .fx-subtle) :is(.command-palette-item, .new-tab-picker-card, .tab-bar-tab, .agent-panel-starters button, .session-list__open)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    140px circle at var(--fx-mx, 50%) var(--fx-my, 50%),
+    rgba(var(--brand-cyan-rgb), 0.11),
+    rgba(var(--brand-magenta-rgb), 0.05) 45%,
+    transparent 72%
+  );
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+body:is(.fx-full, .fx-subtle) :is(.command-palette-item, .new-tab-picker-card, .tab-bar-tab, .agent-panel-starters button, .session-list__open):hover::before {
+  opacity: 1;
+}
+
+/* ---------- Command palette selection glide ---------- */
+body:is(.fx-full, .fx-subtle) .fx-glide-host { position: relative; }
+.fx-glide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  list-style: none;
+  pointer-events: none;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    var(--accent-muted);
+  box-shadow: var(--flare-glow-soft);
+  will-change: transform;
+}
+.fx-glide-host > .command-palette-item.selected {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* ---------- Streaming text reveal ---------- */
+.fx-tok { animation: fx-tok-in 420ms var(--ease-out) both; }
+@keyframes fx-tok-in {
+  from { opacity: 0; filter: blur(3px); text-shadow: 0 0 12px rgba(var(--brand-cyan-rgb), 0.9); }
+  60% { opacity: 1; }
+  to { opacity: 1; filter: none; text-shadow: none; }
+}
+body.fx-lowpower .fx-tok { animation-name: fx-tok-in-lite; }
+@keyframes fx-tok-in-lite { from { opacity: 0; } to { opacity: 1; } }
+
+body:is(.fx-full, .fx-subtle) .agent-answer.is-typing .agent-answer-caret {
+  color: var(--brand-cyan);
+  text-shadow: 0 0 8px rgba(var(--brand-cyan-rgb), 0.8), 0 0 18px rgba(var(--brand-magenta-rgb), 0.5);
+}
+
+/* ---------- Starfield surfaces ---------- */
+.fx-starfield {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+body:is(.fx-full, .fx-subtle) .fx-starfield { display: block; }
+body:is(.fx-full, .fx-subtle) .welcome-panel { position: relative; z-index: 1; }
+/* New-tab picker: canvas sits on the fixed dropdown surface (the content
+   element scrolls, which would carry the stars with it). */
+#new-tab-picker > .fx-starfield { opacity: 0.55; }
+body:is(.fx-full, .fx-subtle) #new-tab-picker > :not(.fx-starfield) { position: relative; z-index: 1; }
+
+/* ---------- Ambient chrome (fx/ambient.js) ----------
+   Top/bottom: the host is positioned over #tab-bar by script and takes over
+   the bar's glass fill, so the bar keeps only its sheen. Left/right: the host
+   fills the isolated sidebar at z-index -1, under the in-flow chrome. */
+.fx-ambient {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--surface-glass);
+}
+.fx-ambient > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.fx-ambient--vertical,
+.fx-ambient--fill {
+  inset: 0;
+  z-index: -1;
+  background: transparent;
+}
+body.fx-ambient-on #chrome-sidebar { isolation: isolate; }
+body.fx-ambient-on .tab-bar--horizontal {
+  background: linear-gradient(180deg, rgba(var(--sheen-rgb), 0.04), transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* The sticky action group keeps its fill only while tabs scroll beneath it. */
+body.fx-ambient-on .tab-bar:not(.is-overflowing) .tab-bar-actions { background: none; }
+
+/* Subtle level: one slow compositor-only slide of brand washes. */
+.fx-ambient--drift::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  background:
+    radial-gradient(ellipse 18% 140% at 12% 50%, rgba(var(--brand-cyan-rgb), 0.16), transparent 70%),
+    radial-gradient(ellipse 22% 160% at 38% 40%, rgba(var(--brand-magenta-rgb), 0.12), transparent 70%),
+    radial-gradient(ellipse 20% 150% at 62% 60%, rgba(var(--accent-rgb), 0.14), transparent 70%),
+    radial-gradient(ellipse 18% 140% at 88% 50%, rgba(var(--brand-violet-rgb), 0.14), transparent 70%);
+  animation: fx-ambient-slide 48s var(--ease-standard) infinite alternate;
+}
+.fx-ambient--vertical.fx-ambient--drift::before {
+  right: 0;
+  width: auto;
+  height: 200%;
+  background:
+    radial-gradient(ellipse 140% 18% at 50% 12%, rgba(var(--brand-cyan-rgb), 0.16), transparent 70%),
+    radial-gradient(ellipse 160% 22% at 40% 38%, rgba(var(--brand-magenta-rgb), 0.12), transparent 70%),
+    radial-gradient(ellipse 150% 20% at 60% 62%, rgba(var(--accent-rgb), 0.14), transparent 70%),
+    radial-gradient(ellipse 140% 18% at 50% 88%, rgba(var(--brand-violet-rgb), 0.14), transparent 70%);
+  animation-name: fx-ambient-slide-y;
+}
+body.theme-light .fx-ambient--drift::before { opacity: 0.6; }
+@keyframes fx-ambient-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes fx-ambient-slide-y { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+
+/* ---------- Voice orb ---------- */
+.voice-chip-orb {
+  display: none;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+body.fx-full .voice-chip:not(.is-transcribing) .voice-chip-orb { display: block; }
+body.fx-full .voice-chip:not(.is-transcribing) .voice-chip-dot { display: none; }

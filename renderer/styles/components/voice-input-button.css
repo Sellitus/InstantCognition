@@ -1,0 +1,107 @@
+.voice-input-button {
+  --voice-button-size: 36px;
+  flex: 0 0 var(--voice-button-size);
+  width: var(--voice-button-size);
+  height: var(--voice-button-size);
+  min-width: var(--voice-button-size);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.voice-input-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.voice-input-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.voice-input-button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.voice-input-button.is-listening {
+  color: var(--status-error);
+  border-color: var(--status-error);
+  animation: voice-input-button-pulse 1.1s ease-in-out infinite;
+}
+
+.voice-input-button.is-transcribing {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+.voice-input-button .icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.assistant-window-composer-row .voice-input-button {
+  --voice-button-size: 40px;
+}
+
+.agent-panel-controls .voice-input-button {
+  --voice-button-size: 30px;
+}
+
+.library-window-filter-row .voice-input-button,
+.new-tab-picker-search-row .voice-input-button,
+.sv-voice-field .voice-input-button {
+  --voice-button-size: 36px;
+  padding: 0;
+  border-radius: var(--radius-full);
+}
+
+.new-tab-picker-search-row,
+.sv-voice-field {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.new-tab-picker-search-row {
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.sv-voice-field {
+  align-items: flex-start;
+}
+
+.new-tab-picker-search-row .new-tab-picker-search,
+.sv-voice-field > textarea,
+.sv-voice-field > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sv-voice-field .voice-input-button {
+  align-self: flex-start;
+}
+
+@keyframes voice-input-button-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-error) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--status-error) 0%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-input-button.is-listening {
+    animation: none;
+  }
+}
+body.no-animations .voice-input-button.is-listening { animation: none; }

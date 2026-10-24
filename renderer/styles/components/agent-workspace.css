@@ -1,0 +1,64 @@
+/* Agent workspace — isolated tab area used by the agentic browser.
+ * Reparented at runtime by AgentWorkspaceManager into .tab-bar-wrap so it
+ * occupies the SAME layout slot as #space-container — same look as a normal
+ * tab area, just rendering the agent's tabs and webviews instead.
+ *
+ * Visibility is driven by AppState.viewMode via inline style toggles in
+ * AgentWorkspaceManager._applyViewMode (matches the existing #space-container
+ * visibility pattern; no extra body classes or accents here so the chrome
+ * looks identical between user and agent views). */
+
+#agent-workspace-container {
+  flex: 1 1 auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+  display: none; /* default hidden; flipped to flex by JS in agent view */
+}
+
+.agent-tab-wrapper {
+  flex: 1;
+  display: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+.agent-tab-wrapper.is-active {
+  display: flex;
+}
+
+/* Multi-space mode for the agent workspace — independent of the user view's
+ * .multi-space-container so toggling one never affects the other. When the
+ * agent workspace is in multi mode (or sideBySide layout), every wrapper is
+ * shown side-by-side; otherwise only .is-active is visible. */
+#agent-workspace-container.agent-workspace-multi {
+  flex-direction: row;
+  gap: 1px;
+}
+#agent-workspace-container.agent-workspace-multi .agent-tab-wrapper {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.agent-tab-browser {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background-color: var(--surface-dim);
+}
+
+/* Brief highlight when a Research Report [N] citation jumps to this pane. */
+.agent-tab-wrapper.is-citation-flash {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  animation: agent-citation-flash 1.2s var(--ease-standard);
+}
+@keyframes agent-citation-flash {
+  0% { box-shadow: inset 0 0 0 3px var(--accent); }
+  100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-tab-wrapper.is-citation-flash { animation: none; }
+}

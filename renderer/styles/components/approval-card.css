@@ -1,0 +1,352 @@
+/* Approval card (agent:approval-request queue), its diff preview, and the
+   composer's permission-mode pill. Tokens only. */
+
+/* ---- Approval card ----------------------------------------------------- */
+
+.agent-panel-approval:not([hidden]) {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.approval-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.approval-card:focus { outline: none; }
+.approval-card:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-md); }
+
+.approval-card__top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.approval-card__counter {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+.approval-card__call { margin: var(--space-1) 0 0; }
+.approval-card__session {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.approval-card__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  min-width: 0;
+}
+.approval-card__label { color: var(--text-secondary); }
+.approval-card__value {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.approval-card__args {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  max-height: 160px;
+  overflow: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.approval-card__error {
+  padding: var(--space-2) var(--space-3);
+  background: var(--status-error-bg);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+}
+
+.approval-card__argv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.approval-card__chip {
+  padding: 1px var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.approval-card__chip:first-child { font-weight: var(--font-weight-semibold); }
+.approval-card__chip--empty { color: var(--text-tertiary); font-family: inherit; }
+
+.approval-card__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.approval-card__actions { margin-top: var(--space-2); }
+.approval-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+.approval-card__btn:hover { background: var(--surface-hover); }
+.approval-card__btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.approval-card__btn--approve { border-color: var(--accent); }
+.approval-card__btn--reject { color: var(--status-error); border-color: var(--status-error); }
+.approval-card__rule {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 28ch;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* Announcements only; never visible. */
+.approval-card__live,
+.permission-mode__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Diff view ---------------------------------------------------------- */
+
+.diff-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+}
+.diff-view__summary {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+.diff-view__stat--add { color: var(--syntax-addition); }
+.diff-view__stat--del { color: var(--syntax-deletion); }
+.diff-view__expand {
+  align-self: flex-start;
+}
+.diff-view__body {
+  max-height: 320px;
+  overflow: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+.diff-view__file {
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+}
+.diff-view__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  line-height: 1.45;
+}
+.diff-view__row td { padding: 0 var(--space-2); vertical-align: top; }
+.diff-view__num {
+  width: 1%;
+  min-width: 3ch;
+  text-align: right;
+  color: var(--text-tertiary);
+  user-select: none;
+  white-space: nowrap;
+}
+.diff-view__sign {
+  width: 1%;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+.diff-view__code {
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.diff-view__row--add { background: var(--diff-add-bg); }
+.diff-view__row--add .diff-view__sign { color: var(--syntax-addition); }
+.diff-view__row--del { background: var(--diff-del-bg); }
+.diff-view__row--del .diff-view__sign { color: var(--syntax-deletion); }
+.diff-view__row--meta .diff-view__code { color: var(--text-tertiary); font-style: italic; }
+.diff-view__hunk {
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-raised);
+  color: var(--syntax-meta);
+}
+.diff-view__empty,
+.diff-view__note { color: var(--text-secondary); }
+.diff-view__raw {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  max-height: 320px;
+  overflow: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ---- Permission-mode pill ---------------------------------------------- */
+
+/* The pill's popovers anchor to the composer, so they span its width above
+   the controls row whichever line the pill wrapped onto. */
+.agent-panel-composer { position: relative; }
+
+.permission-mode { display: inline-flex; }
+.agent-panel-controls .permission-mode__pill {
+  height: 26px;
+  padding: 0 var(--space-3);
+  gap: var(--space-1);
+  background: var(--surface-sunken);
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+.agent-panel-controls .permission-mode__pill:hover { color: var(--text-primary); }
+.permission-mode__icon { display: inline-flex; }
+.permission-mode[data-mode="auto-edit"] .permission-mode__pill,
+.permission-mode[data-mode="plan"] .permission-mode__pill {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.agent-panel-controls .permission-mode__pill.is-danger {
+  background: var(--status-error-bg);
+  border-color: var(--status-error);
+  color: var(--status-error);
+}
+.permission-mode.has-error .permission-mode__pill { border-style: dashed; border-color: var(--status-error); }
+
+.permission-mode__menu,
+.permission-mode__confirm,
+.permission-mode__error {
+  position: absolute;
+  z-index: var(--z-popover);
+  bottom: 100%;
+  left: var(--space-6);
+  margin-bottom: var(--space-1);
+  max-width: min(360px, calc(100% - 2 * var(--space-6)));
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.permission-mode__menu {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  min-width: 240px;
+}
+.permission-mode__menu[hidden],
+.permission-mode__confirm[hidden],
+.permission-mode__error[hidden] { display: none; }
+
+.agent-panel-controls .permission-mode__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+}
+.agent-panel-controls .permission-mode__item:hover,
+.agent-panel-controls .permission-mode__item:focus-visible { background: var(--surface-hover); outline: none; }
+.permission-mode__item[aria-checked="true"] .permission-mode__item-label { color: var(--accent); }
+.permission-mode__item--bypass .permission-mode__item-label { color: var(--status-error); }
+.permission-mode__item-label { font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
+.permission-mode__item-hint { color: var(--text-secondary); font-size: var(--font-size-xs); }
+
+.permission-mode__confirm {
+  padding: var(--space-3) var(--space-4);
+  border-color: var(--status-error);
+}
+.permission-mode__confirm-text {
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  white-space: normal;
+}
+.permission-mode__confirm-actions { display: flex; gap: var(--space-2); }
+.agent-panel-controls .permission-mode__confirm-yes {
+  background: var(--status-error);
+  border-color: var(--status-error);
+  color: var(--accent-on);
+}
+
+.permission-mode__error {
+  padding: var(--space-2) var(--space-3);
+  border-color: var(--status-error);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  white-space: normal;
+  cursor: pointer;
+}
+
+/* ---- Settings: permission rules + workspace folders -------------------- */
+
+.sv-perm-rules { display: flex; flex-direction: column; gap: var(--space-5); }
+.sv-perm-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.sv-perm-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sv-perm-item,
+.sv-workspace-roots .sv-space-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+.sv-perm-rule,
+.sv-workspace-root {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  word-break: break-all;
+}
+.sv-perm-add { gap: var(--space-2); }
+.sv-instructions { width: 100%; font-family: var(--font-mono); }

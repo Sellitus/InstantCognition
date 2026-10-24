@@ -64,14 +64,13 @@
   ],
   "exclude": [
     "node_modules",
+    "vendor",
     "dist",
     "build",
     "builds",
     "coverage",
     "release",
-    "tests/**/*.test.ts",
-    "tests/**/*.test.js",
-    "tests/**/*.spec.ts",
-    "tests/**/*.spec.js"
+    "tests",
+    "*.bundle.js"
   ]
 }

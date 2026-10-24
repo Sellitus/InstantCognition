@@ -1,0 +1,203 @@
+/* Chrome Bar — unified chrome controller with two modes:
+   1. Horizontal toolbar (topBar) with nav + URL bar + actions
+   2. Vertical sidebar with header, nav, URL bar, tabs, and footer */
+
+/* ============================================================
+   Shared button style (both modes)
+   ============================================================ */
+.chrome-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out);
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.chrome-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.chrome-btn:active {
+  background: var(--surface-active);
+}
+
+/* Icon rendered inside a chrome button (sidebar mode uses an icon span; toolbar renders icon directly) */
+.chrome-btn .icon,
+.chrome-btn-icon .icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+.chrome-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--chrome-sidebar-width-collapsed, 48px);
+  flex-shrink: 0;
+}
+
+/* Top-bar mode no longer renders a ChromeBar surface — TabBar (with its
+   right-edge actions) sits directly under the OS chrome. The legacy
+   `.chrome-toolbar` + `.chrome-nav-controls` rules and the URL/action slots
+   that used to share that strip were dropped when per-tab strips became the
+   only nav/URL surface. */
+
+/* ============================================================
+   Sidebar Mode
+   ============================================================ */
+.chrome-sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(var(--brand-cyan-rgb), 0.08), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(var(--brand-magenta-rgb), 0.06), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 18%),
+    var(--surface-base);
+  border-right: 1px solid var(--border-subtle);
+  overflow: hidden;
+  flex-shrink: 0;
+  width: var(--chrome-sidebar-width-collapsed);
+  transition: width var(--duration-normal) var(--ease-standard);
+}
+
+/* 1px gradient hairline along the inner edge — branded ambient lighting,
+   not chrome. Layout flips left↔right inside the body[data-chrome-layout] block below. */
+.chrome-sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--flare-edge);
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.chrome-sidebar--expanded {
+  width: var(--sidebar-expanded-width);
+}
+
+/* Header — logo / toggle */
+.chrome-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) var(--space-2) var(--space-4);
+  min-height: 46px;
+}
+
+.chrome-sidebar-logo {
+  width: 25px;
+  height: 25px;
+  border-radius: var(--radius-sm);
+  transition: box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.chrome-sidebar-header:hover .chrome-sidebar-logo {
+  box-shadow: var(--flare-glow-soft);
+}
+
+/* Tabs area — scrollable, fills remaining space */
+.chrome-sidebar-tabs {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding-bottom: var(--space-3);
+}
+
+.chrome-sidebar-tabs::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Spacer / divider between tabs and footer */
+.chrome-sidebar-spacer {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ============================================================
+   Footer — LLM status pill only (action buttons moved to TabBar)
+   ============================================================ */
+.chrome-sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* LLM status pill — uses status tokens so it theme-switches */
+.chrome-llm-pill {
+  width: 11px;
+  height: 11px;
+  border-radius: var(--radius-full);
+  font-size: 0;
+  align-self: center;
+  margin: var(--space-2) 0 var(--space-1);
+  background: var(--text-tertiary);
+}
+
+.chrome-llm-pill.stopped { background: var(--text-tertiary); }
+.chrome-llm-pill.starting { background: var(--status-warn); }
+.chrome-llm-pill.running { background: var(--status-success); }
+.chrome-llm-pill.error { background: var(--status-error); }
+.chrome-llm-pill.starting {
+  box-shadow: 0 0 8px currentColor;
+}
+/* Running heartbeat — cross-fades a magenta halo against the green core so
+   the pill reads as alive, not just lit. */
+.chrome-llm-pill.running {
+  animation: chrome-llm-pulse 4.8s var(--ease-standard) infinite;
+}
+@keyframes chrome-llm-pulse {
+  0%, 100% { box-shadow: 0 0 8px currentColor, 0 0 14px rgba(var(--brand-cyan-rgb), 0.18); }
+  50%      { box-shadow: 0 0 8px currentColor, 0 0 18px rgba(var(--brand-magenta-rgb), 0.22); }
+}
+body.no-animations .chrome-llm-pill.running {
+  animation: none;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ============================================================
+   Body-level layout rules — toggle sidebar visibility per layout
+   ============================================================ */
+
+/* Horizontal modes (top/bottom): no sidebar shell — TabBar lives in the wrap. */
+body[data-chrome-layout="top"] #chrome-sidebar,
+body[data-chrome-layout="bottom"] #chrome-sidebar {
+  display: none !important;
+}
+
+/* Right sidebar: flip border to the inner edge and reorder body so it sits
+   after the content area in body's row flex. Same default flex order
+   (chrome-sidebar before tab-bar-wrap in DOM) handles "left" without rules. */
+body[data-chrome-layout="right"] #chrome-sidebar {
+  order: 2;
+  border-right: none;
+  border-left: 1px solid var(--border-subtle);
+}
+body[data-chrome-layout="right"] #chrome-sidebar::after {
+  left: 0;
+  right: auto;
+}
+body[data-chrome-layout="right"] #tab-bar-wrap {
+  order: 1;
+}

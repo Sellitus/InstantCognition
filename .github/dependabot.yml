@@ -1,0 +1,40 @@
+version: 2
+
+updates:
+  # Electron gets its own weekly PR, majors included: the release build resolves
+  # electron@latest anyway, so a PR that runs the full suite and the launch
+  # smoke is where a breaking major should surface.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-name: electron
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: electron
+      # Majors of everything else land deliberately, not on a schedule.
+      - dependency-type: all
+        update-types: [version-update:semver-major]
+    groups:
+      dev-dependencies:
+        dependency-type: development
+      production-dependencies:
+        dependency-type: production
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci

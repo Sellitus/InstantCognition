@@ -1,0 +1,228 @@
+/* Assistant shell — #assistant-shell hosts the Assistant panel.
+   Browser mode: a resizable sidebar right of the page.
+   Assistant mode: the main pane; #tab-bar-wrap becomes a right-hand dock.
+   Everything is driven by body classes from ViewShellManager. Webview
+   containers are only restyled in place: a moved or display:none webview
+   reloads or stops painting, so the collapsed dock slides off-canvas. */
+
+#assistant-shell {
+  position: relative;
+  display: flex;
+  flex: 0 0 0px;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  visibility: hidden;
+  background: var(--surface-base);
+  border-left: 0 solid var(--border-subtle);
+}
+/* Lit leading edge in the browser-mode sidebar, like the chrome sidebar's. */
+body.assistant-sidebar-open:not(.app-mode-assistant) #assistant-shell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  z-index: var(--z-raised);
+  background: var(--flare-edge);
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+/* Right chrome layout: stay between the content and the chrome sidebar. */
+body[data-chrome-layout="right"] #assistant-shell { order: 1; }
+
+.assistant-shell-panel {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+.assistant-shell-panel > .agent-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* The panel fills the shell's height here, not a floating sheet's. */
+#assistant-shell .agent-panel-v2 {
+  min-height: 0;
+  height: 100%;
+}
+
+/* ---- Browser mode: sidebar -------------------------------------------- */
+
+body.assistant-sidebar-open #assistant-shell {
+  flex-basis: min(var(--assistant-sidebar-width), calc(100vw - 320px));
+  visibility: visible;
+  border-left-width: 1px;
+}
+/* Fixed panel width while the sidebar animates open or closed, so the
+   transcript slides instead of reflowing every frame. */
+body.app-mode-browser .assistant-shell-panel {
+  flex: 0 0 auto;
+  width: min(var(--assistant-sidebar-width), calc(100vw - 320px));
+}
+
+/* ---- Assistant mode: main pane + dock --------------------------------- */
+
+html body.app-mode-assistant #assistant-shell {
+  order: 1;
+  flex: 1 1 auto;
+  visibility: visible;
+  border-left-width: 0;
+}
+html body.app-mode-assistant #tab-bar-wrap {
+  order: 2;
+  flex: 0 0 min(var(--dock-width), calc(100vw - 480px));
+  border-left: 1px solid var(--border-subtle);
+}
+html body.app-mode-assistant[data-chrome-layout="right"] #chrome-sidebar { order: 3; }
+
+/* Collapsed dock: fixed and translated off the right edge. Never
+   display:none or zero width; inert + aria-hidden come from BrowserDock. */
+html body.app-mode-assistant:not(.assistant-dock-open) #tab-bar-wrap {
+  position: fixed;
+  top: var(--chrome-strip-top, 0px);
+  right: 0;
+  bottom: var(--chrome-strip-bottom, 0px);
+  width: var(--dock-width);
+  height: auto;
+  transform: translateX(100%);
+  pointer-events: none;
+}
+
+/* The Ctrl+click browser view has no place in assistant mode. */
+html body.app-mode-assistant #browser-container {
+  position: fixed;
+  top: var(--chrome-strip-top, 0px);
+  right: 0;
+  bottom: var(--chrome-strip-bottom, 0px);
+  width: var(--dock-width);
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---- Dock rail --------------------------------------------------------- */
+
+.assistant-dock-rail {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-3);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(var(--brand-cyan-rgb), 0.08), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(var(--brand-magenta-rgb), 0.06), transparent 42%),
+    linear-gradient(180deg, rgba(var(--sheen-rgb), 0.035), transparent 18%),
+    var(--surface-sunken);
+  border-left: 1px solid var(--border-subtle);
+}
+.assistant-dock-rail button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out);
+}
+.assistant-dock-rail button:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.assistant-dock-rail button:active { transform: translateY(0) scale(0.96); }
+.assistant-dock-rail button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.assistant-dock-toggle[aria-expanded="true"] {
+  border-color: rgba(var(--accent-rgb), 0.32);
+  background:
+    linear-gradient(135deg, rgba(var(--brand-cyan-rgb), 0.18), rgba(var(--brand-magenta-rgb), 0.12)),
+    var(--surface-raised);
+  color: var(--accent-hover);
+  box-shadow: inset 0 var(--sheen-y) 0 rgba(var(--sheen-rgb), 0.06), var(--flare-glow-soft);
+}
+
+/* ---- Resize handles ---------------------------------------------------- */
+
+.assistant-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: var(--z-raised);
+  width: var(--space-3);
+  cursor: col-resize;
+  touch-action: none;
+}
+.assistant-resize-handle--sidebar { left: 0; }
+.assistant-resize-handle--dock { right: 0; }
+.assistant-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.assistant-resize-handle--sidebar::after { left: 0; }
+.assistant-resize-handle--dock::after { right: 0; }
+.assistant-resize-handle:hover::after {
+  background: var(--border-strong);
+}
+body.assistant-resizing .assistant-resize-handle::after {
+  background: var(--accent);
+}
+.assistant-resize-handle:focus-visible {
+  outline: none;
+}
+.assistant-resize-handle:focus-visible::after {
+  width: 3px;
+  background: var(--accent);
+}
+
+/* ---- Motion ------------------------------------------------------------
+   Only while fx motion is on: the fx-full / fx-subtle body classes already
+   fold in prefers-reduced-motion and settings.motionEffects. */
+
+body.fx-full #assistant-shell,
+body.fx-subtle #assistant-shell {
+  transition: flex-basis var(--duration-normal) var(--ease-out), visibility 0s linear var(--duration-normal);
+}
+body.fx-full.assistant-sidebar-open #assistant-shell,
+body.fx-subtle.assistant-sidebar-open #assistant-shell {
+  transition: flex-basis var(--duration-normal) var(--ease-out), visibility 0s;
+}
+html body.fx-full.app-mode-assistant #tab-bar-wrap,
+html body.fx-subtle.app-mode-assistant #tab-bar-wrap {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+body.assistant-flipping #assistant-shell,
+body.assistant-flipping #tab-bar-wrap {
+  will-change: transform;
+}
+
+/* Live drags and the no-animations toggle snap. */
+body.assistant-resizing #assistant-shell,
+body.assistant-resizing #tab-bar-wrap,
+body.no-animations #assistant-shell,
+body.no-animations #tab-bar-wrap {
+  transition: none !important;
+}
+body.no-animations .assistant-dock-rail button:hover { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .assistant-dock-rail button:hover { transform: none; }
+}

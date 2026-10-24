@@ -1,0 +1,99 @@
+/* Reader view — content rules only. Visual shell (overlay, positioning,
+   animation, header) lives in dropdown.css. Header Listen button is built
+   into the .app-dropdown-header via setHeader, mirroring page-copilot. */
+
+.reader-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.reader-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.reader-listen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.reader-listen-btn:hover { background: var(--accent); color: var(--accent-on); }
+.reader-listen-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+.reader-listen-btn.is-speaking { background: var(--accent); color: var(--accent-on); }
+.reader-listen-btn .icon { width: 1em; height: 1em; }
+
+.reader-meta {
+  flex: 0 0 auto;
+  margin: var(--space-5) var(--space-7) var(--space-3);
+}
+.reader-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+  color: var(--text-primary);
+  font-weight: 650;
+}
+.reader-byline {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+}
+
+.reader-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 var(--space-7) var(--space-5);
+  padding: var(--space-3) 0 var(--space-6);
+  color: var(--text-primary);
+  line-height: var(--line-height-relaxed);
+  font-size: var(--font-size-md);
+  max-width: 72ch;
+}
+
+.reader-body .reader-h {
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
+  margin: var(--space-6) 0 var(--space-3);
+  font-weight: 600;
+}
+.reader-body .reader-h1 { font-size: var(--font-size-xl); }
+.reader-body .reader-h2 { font-size: var(--font-size-lg); }
+.reader-body .reader-h3,
+.reader-body .reader-h4,
+.reader-body .reader-h5,
+.reader-body .reader-h6 { font-size: var(--font-size-md); }
+
+.reader-body .reader-p { margin: 0 0 var(--space-4); word-break: break-word; }
+
+.reader-body .reader-list {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-6);
+}
+.reader-body .reader-list li { margin: 0 0 var(--space-2); }
+
+.reader-body .reader-quote {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.reader-status {
+  padding: var(--space-6) var(--space-7);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+.reader-status--error { color: var(--status-error); }

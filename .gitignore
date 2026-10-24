@@ -133,8 +133,6 @@ dist
 # Ignore the builds folder until release process is figured out
 builds/
 
-.DS_Store
-
 # Generated files
 main.combined.css
 test-startup.js
@@ -143,20 +141,23 @@ test-startup.js
 error-report.json
 test-failures.json
 auto-fix.log
-*.log
 startup.log
 
 # IDE and editor files
 .vscode/
-.vscode/settings.json
 .idea/
+*.sublime-workspace
+*.sublime-project
 *.swp
 *.swo
 *~
 
 # OS files
+.DS_Store
 Thumbs.db
+ehthumbs.db
 Desktop.ini
+$RECYCLE.BIN/
 
 # Temporary files
 *.tmp
@@ -166,7 +167,6 @@ Desktop.ini
 *.backup
 *.backup-*
 *.bak
-*~
 
 # Debug and diagnostic files
 debug-*.log
@@ -178,7 +178,6 @@ startup-debug.log
 *-wrapper.js
 *-instrumented.js
 *-minimal.js
-trace-wrapper.js
 
 # Recovery files
 recovery.html
@@ -214,19 +213,6 @@ pnpm-lock.yaml
 .env.*
 .envrc
 
-# System files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# Editor directories and files
-.idea/
-.vscode/
-*.sublime-workspace
-*.sublime-project
-
 # Temporary generated files (but keep useful scripts)
 main-test.js
 main-debug.js
@@ -261,3 +247,43 @@ Temporary Items
 
 .autoflow/
 config.json
+
+# Bundled llama-server binaries (fetched via scripts/fetch-llama-server.js).
+# Keep the directory structure (.gitkeep) but never commit the binaries themselves.
+vendor/llama-server/*/*
+!vendor/llama-server/*/.gitkeep
+
+# Bundled MLX Python runtime (fetched via scripts/fetch-mlx-runtime.js).
+# Same pattern — keep .gitkeep, skip the ~400MB interpreter + mlx_lm wheels.
+vendor/mlx-python/*/*
+!vendor/mlx-python/*/.gitkeep
+
+# Bundled oMLX Python runtime (fetched via scripts/fetch-omlx-runtime.js).
+vendor/omlx-python/*/*
+!vendor/omlx-python/*/.gitkeep
+
+# Bundled Moonshine ASR model (fetched via scripts/fetch-moonshine-model.js).
+# Same pattern — keep .gitkeep, skip the ~120MB ONNX weights + generated manifest.
+vendor/moonshine/*/*
+!vendor/moonshine/*/.gitkeep
+
+# Smoke-test models (downloaded by scripts/smoke-llm-engines.js). Never commit
+# weights — they're reproducible from the harness on demand.
+vendor/test-models/
+
+# AI-assistant working state. These are one developer's scratch context, not
+# project documentation: keeping them out of the repo stops stale internal notes
+# from being read as current design.
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+.claude/
+.serena/
+.meow-verify-ignore
+openspec/
+
+# Renderer bundles (scripts/build-renderer.js)
+renderer.bundle.js
+renderer.bundle.js.map
+launcher.bundle.js
+launcher.bundle.js.map

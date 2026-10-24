@@ -8,7 +8,9 @@ module.exports = [
       'out/**/*',
       'node_modules/**/*',
       'coverage/**/*',
+      'vendor/**/*',
       '*.min.js',
+      '*.bundle.js',
       '**/*.d.ts',
       'types/**/*',
       '.husky/**/*',
@@ -25,25 +27,6 @@ module.exports = [
         ...globals.node,
         ...globals.browser,
         ...globals.jest,
-        app: 'readonly',
-        BrowserWindow: 'readonly',
-        ipcMain: 'readonly',
-        ipcRenderer: 'readonly',
-        shell: 'readonly',
-        dialog: 'readonly',
-        Menu: 'readonly',
-        MenuItem: 'readonly',
-        Tray: 'readonly',
-        nativeImage: 'readonly',
-        clipboard: 'readonly',
-        globalShortcut: 'readonly',
-        screen: 'readonly',
-        systemPreferences: 'readonly',
-        protocol: 'readonly',
-        session: 'readonly',
-        webContents: 'readonly',
-        desktopCapturer: 'readonly',
-        remote: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: {
@@ -114,6 +97,14 @@ module.exports = [
     rules: {
       // Scripts can use console
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['tests/mocks/**/*.js'],
+    rules: {
+      // Mock signatures mirror the real Electron API, so the parameter names
+      // are documentation even where the stub body ignores them.
+      'no-unused-vars': ['warn', { args: 'none', varsIgnorePattern: '^_' }],
     },
   },
 ];

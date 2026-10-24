@@ -1,6 +1,8 @@
-const { app, dialog, BrowserWindow } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { errMsg } = require('../../shared/errMsg');
+const ipcSenderPolicy = require('./ipcSenderPolicy');
 
 class RecoveryMode {
   constructor() {
@@ -91,6 +93,7 @@ class RecoveryMode {
       },
       title: 'InstantCognition Recovery Mode'
     });
+    ipcSenderPolicy.trustShell(this.recoveryWindow.webContents);
     
     // Create recovery HTML content
     const recoveryHTML = `
@@ -103,42 +106,49 @@ class RecoveryMode {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 40px;
-            background: #f5f5f5;
-            color: #333;
+            background: #15171b;
+            color: #ecedef;
+            line-height: 1.5;
           }
           h1 {
-            color: #d32f2f;
+            color: #d9b26e;
             margin-bottom: 20px;
+            font-weight: 600;
           }
-          .actions {
-            margin-top: 30px;
-          }
+          h3 { color: #ecedef; font-weight: 600; margin-top: 28px; }
+          .actions { margin-top: 30px; display: flex; gap: 8px; flex-wrap: wrap; }
           button {
-            background: #1976d2;
-            color: white;
-            border: none;
+            background: #23262c;
+            color: #ecedef;
+            border: 1px solid rgba(255,255,255,0.10);
             padding: 10px 20px;
-            margin: 5px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-family: inherit;
+            transition: background 150ms ease;
           }
-          button:hover {
-            background: #1565c0;
-          }
+          button:hover { background: rgba(255,255,255,0.04); }
+          button.primary { background: #2FB9D6; border-color: #2FB9D6; color: #fff; }
+          button.primary:hover { background: #45CDEC; }
           button.danger {
-            background: #d32f2f;
+            background: rgba(224,122,122,0.14);
+            border-color: #e07a7a;
+            color: #e07a7a;
           }
-          button.danger:hover {
-            background: #c62828;
-          }
+          button.danger:hover { background: #e07a7a; color: #fff; }
           .log-path {
-            font-family: monospace;
-            background: #e0e0e0;
-            padding: 5px;
-            border-radius: 3px;
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+            background: #0e1013;
+            color: #a0a4ab;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.06);
             word-break: break-all;
+            display: inline-block;
           }
+          ul { color: #a0a4ab; }
+          ul li { margin: 4px 0; }
         </style>
       </head>
       <body>
@@ -160,7 +170,7 @@ class RecoveryMode {
           <button onclick="resetSettings()">Reset Settings</button>
           <button onclick="clearCache()">Clear Cache</button>
           <button onclick="viewLogs()">View Logs</button>
-          <button onclick="tryNormal()">Try Normal Start</button>
+          <button class="primary" onclick="tryNormal()">Try Normal Start</button>
           <button class="danger" onclick="quit()">Quit</button>
         </div>
         
@@ -230,10 +240,10 @@ class RecoveryMode {
           app.quit();
         }, 2000);
       } catch (error) {
-        this.recoveryWindow.webContents.send('recovery-message', `Error: ${error.message}`);
+        this.recoveryWindow.webContents.send('recovery-message', `Error: ${errMsg(error)}`);
       }
     });
-    
+
     ipcMain.on('recovery-clear-cache', async () => {
       try {
         const session = require('electron').session;
@@ -242,10 +252,10 @@ class RecoveryMode {
         
         this.recoveryWindow.webContents.send('recovery-message', 'Cache cleared successfully.');
       } catch (error) {
-        this.recoveryWindow.webContents.send('recovery-message', `Error: ${error.message}`);
+        this.recoveryWindow.webContents.send('recovery-message', `Error: ${errMsg(error)}`);
       }
     });
-    
+
     ipcMain.on('recovery-view-logs', () => {
       const logsPath = path.join(app.getPath('userData'), 'logs');
       shell.openPath(logsPath);

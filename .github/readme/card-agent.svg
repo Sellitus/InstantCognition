@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="300" viewBox="0 0 420 300" role="img" aria-label="An agent that does it for you">
+<style>
+.flow{animation-name:flow;animation-timing-function:linear;animation-iteration-count:infinite}
+.breathe{animation-name:breathe;animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate}
+.tw{animation-name:tw;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+.drift{animation:drift 28s ease-in-out infinite alternate}
+.drift2{animation:drift2 34s ease-in-out infinite alternate}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 120s linear infinite}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 7s ease-in-out infinite}
+.shine{animation:shine 10s linear infinite}
+@keyframes breathe{from{opacity:.55}to{opacity:1}}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:1}}
+@keyframes drift{from{transform:translate(-40px,10px) scale(1)}to{transform:translate(50px,-16px) scale(1.08)}}
+@keyframes drift2{from{transform:translate(30px,-10px)}to{transform:translate(-60px,18px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#141A2C"/><stop offset="1" stop-color="#0A0C16"/></linearGradient>
+<linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF2486" stop-opacity=".9"/><stop offset=".45" stop-color="#ffffff" stop-opacity=".07"/><stop offset="1" stop-color="#9B5CFF" stop-opacity=".7"/></linearGradient>
+<linearGradient id="ink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF2486"/><stop offset="1" stop-color="#9B5CFF"/></linearGradient>
+<radialGradient id="bloom"><stop offset="0" stop-color="#FF2486" stop-opacity=".55"/><stop offset=".5" stop-color="#9B5CFF" stop-opacity=".16"/><stop offset="1" stop-color="#9B5CFF" stop-opacity="0"/></radialGradient>
+<clipPath id="c"><rect width="420" height="300" rx="22"/></clipPath>
+<filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<g clip-path="url(#c)">
+  <rect width="420" height="300" fill="url(#bg)"/>
+  <g class="drift"><ellipse cx="90" cy="70" rx="210" ry="150" fill="url(#bloom)"/></g>
+</g>
+<g transform="translate(34 34)">
+  <rect width="72" height="72" rx="18" fill="#0B0E19" stroke="url(#ink)" stroke-width="1.5"/>
+  <g class="pulse" filter="url(#gl)" opacity=".9"><g fill="none" stroke="url(#ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 18l24 10-10 4-4 10z"/><path d="M38 38l12 12"/><path d="M52 16v8M48 20h8M56 34v6M53 37h6"/></g></g>
+  <g><g fill="none" stroke="url(#ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 18l24 10-10 4-4 10z"/><path d="M38 38l12 12"/><path d="M52 16v8M48 20h8M56 34v6M53 37h6"/></g></g>
+</g>
+<text x="34" y="152" font-family="'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="25" font-weight="750" fill="#F3F6FF" letter-spacing="-.4">An agent that does it for you</text>
+<text x="34" y="196" font-family="'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="16.5" fill="#B4BED3">It reads the page, plans, clicks and</text><text x="34" y="221" font-family="'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="16.5" fill="#B4BED3">types, and asks first before</text><text x="34" y="246" font-family="'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="16.5" fill="#B4BED3">anything risky.</text>
+<rect x=".75" y=".75" width="418.5" height="298.5" rx="21.5" fill="none" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>

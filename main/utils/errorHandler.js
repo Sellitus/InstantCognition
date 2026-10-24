@@ -49,7 +49,7 @@ class ErrorHandler {
     });
     
     // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason, _promise) => {
       this.handleError('Unhandled Promise Rejection', reason, false);
     });
     
@@ -62,14 +62,14 @@ class ErrorHandler {
     });
     
     // App error events
-    app.on('render-process-gone', (event, webContents, details) => {
+    app.on('render-process-gone', (_event, _webContents, details) => {
       this.handleError('Renderer Process Crashed', {
         reason: details.reason,
         exitCode: details.exitCode
       }, true);
     });
     
-    app.on('child-process-gone', (event, details) => {
+    app.on('child-process-gone', (_event, details) => {
       this.handleError('Child Process Crashed', details, false);
     });
   }
@@ -139,23 +139,14 @@ class ErrorHandler {
       this.logStream.write(message + '\n');
     }
   }
-  
-  getErrorSummary() {
-    return {
-      totalErrors: this.errorCount,
-      criticalErrors: this.criticalErrors.length,
-      logPath: this.logPath
-    };
-  }
-  
+
   close() {
     if (this.logStream) {
-      this.writeToLog('\n=== Session Ended ===');
-      this.writeToLog(`Total Errors: ${this.errorCount}`);
-      this.writeToLog(`Critical Errors: ${this.criticalErrors.length}`);
       this.logStream.end();
+      this.logStream = null;
     }
   }
+  
 }
 
 module.exports = new ErrorHandler();

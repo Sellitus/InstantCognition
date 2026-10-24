@@ -1,0 +1,239 @@
+/* ============================================================
+   .app-dropdown — unified shell for every chrome-bar dropdown.
+
+   Composition contract: any panel that opens from the chrome bar
+   uses the Dropdown controller, which builds a backdrop + surface
+   from these classes. Panel-specific content fills .app-dropdown-body.
+
+   Position is driven by body[data-chrome-layout] (top/bottom/left/right).
+   Direction of the slide animation matches the bar's edge.
+   ============================================================ */
+
+:root {
+  --chrome-bar-thickness: 0px;
+  --chrome-sidebar-current-width: 0px;
+  --app-dropdown-gap: 12px;
+  --app-dropdown-w: 640px;
+}
+
+.app-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: var(--overlay-backdrop);
+  backdrop-filter: blur(9px) saturate(120%);
+  -webkit-backdrop-filter: blur(9px) saturate(120%);
+  display: block;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.app-dropdown-backdrop.is-open,
+.app-dropdown-backdrop.is-opening {
+  opacity: 1;
+}
+
+.app-dropdown-backdrop.is-closing {
+  opacity: 0;
+}
+
+.app-dropdown {
+  position: fixed;
+  z-index: var(--z-modal);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font: var(--font-size-md)/var(--line-height-normal) var(--font-sans);
+  outline: none;
+  will-change: opacity, transform;
+
+  /* Universal placement: slide down from the top, centered horizontally,
+     in every chrome layout. --chrome-bar-thickness is non-zero only when
+     the chrome bar is on the top edge; for bottom/left/right layouts it is
+     0 so the dropdown still anchors to the top of the viewport. */
+  top: calc(var(--chrome-bar-thickness) + var(--app-dropdown-gap));
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(360px, var(--app-dropdown-w), 96vw);
+  max-height: calc(100vh - var(--chrome-bar-thickness) - var(--app-dropdown-gap) * 2);
+}
+
+/* Top-edge gradient hairline. Every dropdown surface inherits this — one
+   subtle moment of brand flare across all chrome-bar panels at once. */
+.app-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--flare-edge);
+  opacity: 0.62;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Faint diagonal corner bloom — barely visible on the surface, lights the
+   top-left and bottom-right just enough to feel "alive". */
+.app-dropdown::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--flare-radial-corners);
+  pointer-events: none;
+  z-index: 0;
+}
+.app-dropdown > * { position: relative; z-index: 1; }
+
+.app-dropdown.is-opening {
+  animation: app-dropdown-in-from-top var(--duration-slow) var(--ease-out);
+}
+.app-dropdown.is-closing {
+  animation: app-dropdown-out-to-top var(--duration-normal) var(--ease-in) forwards;
+}
+
+.app-dropdown:focus { outline: none; }
+
+/* ---------- Header / body / close button ---------- */
+
+.app-dropdown-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    var(--surface-raised);
+}
+
+.app-dropdown-title {
+  flex: 1 1 auto;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-dropdown-header-slot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.app-dropdown-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.app-dropdown-close:active { transform: scale(0.92); }
+
+.app-dropdown-close:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.app-dropdown-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.app-dropdown-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.app-dropdown-body::-webkit-scrollbar { width: 8px; height: 8px; }
+.app-dropdown-body::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+.app-dropdown-body::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-xs); }
+.app-dropdown-body::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+/* ---------- Size tiers ---------- */
+
+.app-dropdown--sm { --app-dropdown-w: 420px; }
+.app-dropdown--md { --app-dropdown-w: 640px; }
+.app-dropdown--lg { --app-dropdown-w: 880px; }
+.app-dropdown--xl { --app-dropdown-w: 1240px; }
+.app-dropdown--xxl { --app-dropdown-w: 1240px; }
+
+/* xxl is the "settings page" tier — fills most of the viewport. Override the
+   default top-anchored placement so the surface inflates from the center
+   instead of sliding down from the top edge (slide-from-top reads poorly on
+   a near-fullscreen surface). */
+.app-dropdown--xxl {
+  top: max(var(--chrome-bar-thickness) + var(--app-dropdown-gap), 24px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(720px, var(--app-dropdown-w), calc(100vw - 48px));
+  height: calc(100vh - max(var(--chrome-bar-thickness) + var(--app-dropdown-gap), 24px) - 24px);
+  max-height: none;
+}
+
+.app-dropdown--xxl.is-opening {
+  animation: app-dropdown-xxl-in var(--duration-normal) var(--ease-out);
+}
+.app-dropdown--xxl.is-closing {
+  animation: app-dropdown-xxl-out var(--duration-fast) var(--ease-in) forwards;
+}
+
+@keyframes app-dropdown-xxl-in {
+  from { opacity: 0; transform: translate(-50%, 0) scale(0.985); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes app-dropdown-xxl-out {
+  from { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, 0) scale(0.985); }
+}
+
+/* Compact variant: content-sized height in every layout. Used for the find bar
+   and other small surfaces that don't justify a tall column in sidebar modes. */
+.app-dropdown--compact {
+  height: auto !important;
+  max-height: 80vh;
+}
+
+/* ---------- Animation: slide down from the top ----------
+   Translate distance is large enough that the motion is visible on every
+   panel size (a small find bar AND a 1040px-wide agent panel). Without
+   enough travel, big panels fade in but don't read as "sliding down". */
+
+@keyframes app-dropdown-in-from-top {
+  from { opacity: 0; transform: translate(-50%, -32px) scale(0.97); }
+  to   { opacity: 1; transform: translate(-50%, 0)     scale(1); }
+}
+@keyframes app-dropdown-out-to-top {
+  from { opacity: 1; transform: translate(-50%, 0)     scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -32px) scale(0.97); }
+}
+
+/* Disable animations when opted out */
+body.no-animations .app-dropdown-backdrop,
+body.no-animations .app-dropdown {
+  transition: none !important;
+  animation: none !important;
+}

@@ -1,0 +1,542 @@
+/* Sessions: the panel's side panes (Sessions dashboard, Artifacts, Inbox),
+   the sessions list in the history column, and the inbox badge state.
+   Assistant mode gives the open pane its own grid column; the browser-mode
+   sidebar is too narrow for that, so the pane is a sheet over the thread. */
+
+.agent-panel {
+  --side-pane-width: 320px;
+}
+.agent-panel-v2 { position: relative; }
+
+/* Side-pane switcher in the panel header. */
+.assistant-side-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--border-default) 74%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
+  box-shadow: inset 0 var(--sheen-y) 0 rgba(var(--sheen-rgb), 0.03);
+}
+.assistant-side-tab {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--icon-size) + var(--space-3));
+  height: calc(var(--icon-size) + var(--space-3));
+  position: relative;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.assistant-side-tab:hover { background: var(--surface-hover); color: var(--text-primary); }
+.assistant-side-tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.assistant-side-tab.is-active,
+.assistant-side-tab[aria-selected="true"] {
+  border-color: rgba(var(--accent-rgb), 0.32);
+  background:
+    linear-gradient(135deg, rgba(var(--brand-cyan-rgb), 0.18), rgba(var(--brand-magenta-rgb), 0.12)),
+    var(--surface-raised);
+  color: var(--accent-hover);
+  box-shadow: inset 0 var(--sheen-y) 0 rgba(var(--sheen-rgb), 0.06);
+}
+
+/* The pane itself. */
+.assistant-side-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--sheen-angle), rgba(var(--sheen-rgb), 0.04), transparent 30%),
+    var(--surface-glass);
+  backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  border-left: 1px solid var(--border-subtle);
+}
+.assistant-side-pane__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.assistant-side-pane__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+.assistant-side-pane__close {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.assistant-side-pane__close:hover { background: var(--surface-hover); color: var(--text-primary); }
+.assistant-side-pane__close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.assistant-side-pane__panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Assistant mode: a third grid column right of the thread. */
+body.app-mode-assistant .agent-panel-v2.has-side-pane {
+  grid-template-columns: var(--agent-rail-width) minmax(0, 1fr) var(--side-pane-width);
+}
+body.app-mode-assistant .agent-panel-v2.has-side-pane.is-history-open {
+  grid-template-columns: var(--agent-history-width) minmax(0, 1fr) var(--side-pane-width);
+}
+body.app-mode-assistant .agent-panel-v2 > .assistant-side-pane {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* Browser-mode sidebar: a sheet over the thread column. The page next to
+   the sidebar stays interactive; nothing here blocks it. */
+body:not(.app-mode-assistant) .agent-panel-v2 > .assistant-side-pane {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(var(--side-pane-width), 100%);
+  z-index: var(--z-raised);
+  box-shadow: var(--shadow-overlay), var(--brand-glow);
+}
+
+/* Sessions list (history column). */
+.session-list { gap: var(--space-3); padding: var(--space-5) var(--space-4); }
+.session-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-1);
+}
+.session-list__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+.session-list__search {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--border-default) 74%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  box-shadow: inset 0 var(--sheen-y) 0 rgba(var(--sheen-rgb), 0.03);
+}
+.session-list__search:hover { border-color: var(--border-default); }
+.session-list__search:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.session-list__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  scrollbar-width: thin;
+}
+.session-list__group {
+  margin-top: var(--space-2);
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.session-list__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+.session-list__row:hover,
+.session-list__row:focus-within { background: var(--surface-hover); }
+/* Open session: the settings nav's lit item, flare bar included. */
+.session-list__row.is-active {
+  background:
+    linear-gradient(var(--accent-muted), var(--accent-muted)),
+    color-mix(in srgb, var(--surface-raised) 86%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-default));
+  box-shadow: inset 0 var(--sheen-y) 0 rgba(var(--sheen-rgb), 0.04);
+}
+.session-list__row.is-active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 22%;
+  bottom: 22%;
+  width: 2px;
+  border-radius: var(--radius-full);
+  background: var(--flare-edge);
+  pointer-events: none;
+}
+.session-list__row.is-unreadable .session-list__row-title { color: var(--status-warn); }
+.session-list__open {
+  appearance: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.session-list__open:focus-visible { outline: none; box-shadow: var(--focus-ring-inset); }
+.session-list__row-main { display: flex; align-items: center; gap: var(--space-2); max-width: 100%; }
+.session-list__row-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+}
+.session-list__row-meta {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+.session-list__running {
+  flex: 0 0 auto;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--status-success);
+}
+.session-list__badge {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+.session-list__badge--warn { background: var(--status-warn-bg); color: var(--status-warn); }
+.session-list__actions {
+  display: flex;
+  gap: var(--space-1);
+  padding-right: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.session-list__row:hover .session-list__actions,
+.session-list__row:focus-within .session-list__actions,
+.session-list__row.is-pinned .session-list__actions { opacity: 1; }
+.session-list__icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.session-list__icon-btn:hover { background: var(--surface-overlay); color: var(--text-primary); }
+.session-list__icon-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.session-list__icon-btn.is-on { color: var(--accent); }
+.session-list__icon-btn--danger:hover { color: var(--status-error); }
+.session-list__rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+.session-list__rename-input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.session-list__confirm {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+.session-list__confirm-text { flex: 1 1 auto; color: var(--text-primary); }
+.session-list__confirm-btn,
+.session-list__retry {
+  appearance: none;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.session-list__confirm-btn:focus-visible,
+.session-list__retry:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.session-list__confirm-btn--danger {
+  border-color: var(--status-error);
+  background: var(--status-error-bg);
+  color: var(--status-error);
+}
+.session-list__error,
+.session-list__load-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--status-error-bg);
+  color: var(--status-error);
+  font-size: var(--font-size-xs);
+}
+.session-list__load-error { flex-direction: column; }
+.session-list__error-text { flex: 1 1 auto; }
+.session-list__load-error-title { font-weight: var(--font-weight-semibold); }
+.session-list__load-error-detail { color: var(--text-secondary); }
+.session-list__empty {
+  padding: var(--space-4) var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+/* Shared pane chrome for the dashboard and inbox. */
+.sessions-dashboard,
+.inbox-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+.sessions-dashboard__header,
+.inbox-pane__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.sessions-dashboard__heading,
+.inbox-pane__heading {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+/* Inside the side pane the bar already names the pane; the heading stays for screen readers. */
+.assistant-side-pane__panel .sessions-dashboard__heading,
+.assistant-side-pane__panel .inbox-pane__heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.sessions-dashboard__summary { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.sessions-dashboard__list,
+.inbox-pane__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sessions-dashboard__empty,
+.inbox-pane__empty {
+  padding: var(--space-4) var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+.sessions-dashboard__status,
+.inbox-pane__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+}
+.inbox-pane__error,
+.sessions-dashboard__status:not(:empty) {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+}
+
+/* Dashboard rows. */
+.sessions-dashboard__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+}
+.sessions-dashboard__row-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.sessions-dashboard__task {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+.sessions-dashboard__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+.sessions-dashboard__state {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+.sessions-dashboard__state--running { background: var(--status-success-bg); color: var(--status-success); }
+.sessions-dashboard__state--paused { background: var(--status-warn-bg); color: var(--status-warn); }
+.sessions-dashboard__state--queued { background: var(--status-info-bg); color: var(--status-info); }
+.sessions-dashboard__row-error { font-size: var(--font-size-xs); color: var(--status-error); }
+.sessions-dashboard__actions,
+.inbox-pane__actions,
+.inbox-pane__toolbar,
+.inbox-pane__confirm { display: flex; align-items: center; gap: var(--space-2); }
+.sessions-dashboard__btn,
+.sessions-dashboard__retry,
+.inbox-pane__tool,
+.inbox-pane__error-btn {
+  appearance: none;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.sessions-dashboard__btn:hover,
+.inbox-pane__tool:hover { background: var(--surface-hover); }
+.sessions-dashboard__btn:disabled { color: var(--text-disabled); cursor: default; }
+.sessions-dashboard__btn:focus-visible,
+.sessions-dashboard__retry:focus-visible,
+.inbox-pane__tool:focus-visible,
+.inbox-pane__error-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.sessions-dashboard__btn--danger,
+.inbox-pane__tool--danger { border-color: var(--status-error); color: var(--status-error); }
+.inbox-pane__confirm-text { font-size: var(--font-size-xs); color: var(--text-secondary); }
+
+/* Inbox items. */
+.inbox-pane__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+}
+.inbox-pane__item.is-unread { border-color: var(--accent-muted); }
+.inbox-pane__open {
+  appearance: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.inbox-pane__open:not(.is-static):hover { background: var(--surface-hover); }
+.inbox-pane__open.is-static { cursor: default; }
+.inbox-pane__open:focus-visible { outline: none; box-shadow: var(--focus-ring-inset); }
+.inbox-pane__item-head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.inbox-pane__unread-dot {
+  flex: 0 0 auto;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+.inbox-pane__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+}
+.inbox-pane__item.is-unread .inbox-pane__title { font-weight: var(--font-weight-semibold); }
+.inbox-pane__outcome { font-size: var(--font-size-xs); }
+.inbox-pane__outcome--ok { color: var(--status-success); }
+.inbox-pane__outcome--failed { color: var(--status-error); }
+.inbox-pane__summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+.inbox-pane__time { font-size: var(--font-size-xs); color: var(--text-tertiary); }
+.inbox-pane__actions { padding: var(--space-2) var(--space-2) 0 0; }
+.inbox-pane__icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.inbox-pane__icon-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+.inbox-pane__icon-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.inbox-pane__icon-btn--danger:hover { color: var(--status-error); }
+
+/* Inbox count on the Assistant-view pill when it could not be read. */
+.tab-bar-pill .tab-bar-action-badge.is-error { background: var(--status-error); color: var(--on-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-side-tab,
+  .session-list__actions { transition: none; }
+}
+body.no-animations .assistant-side-tab,
+body.no-animations .session-list__actions { transition: none; }

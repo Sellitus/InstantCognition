@@ -1,0 +1,84 @@
+/* ============================================================
+   Minimal reset + global focus + reduced motion.
+   Loaded after tokens.css, before component styles.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Component display rules (display: flex, …) otherwise beat the UA's
+   [hidden] rule, and the element stays visible after el.hidden = true. */
+[hidden] {
+  display: none !important;
+}
+
+/* One focus rule for the entire app.
+   Mouse clicks: no ring (native browser behavior with :focus-visible).
+   Keyboard focus: soft accent ring. */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: inherit;
+}
+
+/* Native form controls still need their own ring treatment */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  box-shadow: var(--focus-ring-inset);
+}
+
+/* Scrollbar styling (WebKit only; Electron is Chromium so this works) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+/* Reduced motion — collapse all animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* App-level opt-out (Appearance → Enable UI Animations) */
+body.no-animations *,
+body.no-animations *::before,
+body.no-animations *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}

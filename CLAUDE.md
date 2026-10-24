@@ -9,12 +9,12 @@
 **InstantCognition** is a cross-platform Electron desktop application that provides instant access to AI LLMs and web searches via a global hotkey (Ctrl/Cmd+Space).
 
 ### Tech Stack
-- **Framework**: Electron 36.4.0
+- **Framework**: Electron 44 (see `package.json`)
 - **Language**: JavaScript (with TypeScript type checking)
 - **Build**: electron-builder, electron-packager
 - **Testing**: Jest
-- **Linting**: ESLint, Prettier
-- **Key Libraries**: @cliqz/adblocker-electron, winston (logging)
+- **Linting**: ESLint (flat config; no separate formatter pass)
+- **Key Libraries**: @ghostery/adblocker-electron, winston (logging), marked + dompurify + highlight.js (markdown), mermaid (artifact diagrams), picomatch (permission/path globs), yaml (SKILL.md frontmatter), diff (approval diffs)
 
 ### Project Architecture
 
@@ -22,82 +22,108 @@
 InstantCognition/
 ├── main.js                    # Entry point - platform detection & app launch
 ├── index.html                 # Main application window
-├── preload.js                 # Preload script
+├── launcher.html              # Quick-launcher window (renderer/launcher/)
+├── preload.js                 # Preload script (re-exports main/preload.js)
 │
 ├── main/                      # Main process (Electron backend)
-│   ├── index.js              # Core main process logic (1,794 lines)
-│   ├── preload.js            # Webview preload script
-│   ├── services/
-│   │   └── ConfigService.js  # Configuration management
-│   ├── utils/
-│   │   ├── config.js         # Config utilities
-│   │   ├── errorHandler.js   # Global error handling
-│   │   ├── logger.js         # Winston logging setup
-│   │   └── recovery.js       # Recovery mode
-│   └── window/
-│       └── windowManager.js  # Window management
+│   ├── index.js              # Bootstrap, window creation, lifecycle
+│   ├── App.js                # Service orchestrator — initializes services + IPC
+│   ├── preload.js            # Webview preload script (gestures, keyboard)
+│   ├── preload/annotate.js   # Webview element picker for annotation mode
+│   ├── ipc/                  # Domain-split IPC handler modules
+│   │   ├── index.js          # registerAll(mainWindow, services)
+│   │   └── assistantHandlers.js # Assistant IPC group (sessions, runs, permissions,
+│   │                         #   checkpoints, artifacts, skills, inbox, recorder,
+│   │                         #   launcher, workspace search) + session-layer attach
+│   ├── services/             # Singleton services, grouped roughly by area:
+│   │   #  Core: ConfigService, MenuService, TrayService, ShortcutService,
+│   │   #        MemoryService, CertificateService, SessionService
+│   │   #  Web:  AdblockerService, ExtensionService, BookmarkService,
+│   │   #        HistoryService, DownloadService, NotificationService,
+│   │   #        BadgeService, PermissionService, PermissionPromptService
+│   │   #  LLM:  LLMService, LLMClientService, EngineDiscoveryService,
+│   │   #        ModelManagerService, ModelHubService, modelRegistry
+│   │   #  Agent: AgentService, AgentRuntime (../agent/), AgentHistoryService,
+│   │   #         AgentApprovalService, AgentTabOpsService, QualityModeService,
+│   │   #         SkillsService, ScreenshotService, CdpSessionManager,
+│   │   #         HttpAllowlistService, tabRegistry, InboxService, RoutineService
+│   ├── agent/                # Agent runtime + tools (browser, fs, shell, plan,
+│   │   │                     #   subagent, skill, artifact)
+│   │   ├── sessions/         # sessionStore (jsonl message tree), sessionManager,
+│   │   │                     #   runTurn, SessionRun, llmGate, contextProjection
+│   │   ├── permissions/      # toolCatalog, ruleMatch, permissionEngine
+│   │   ├── workspace/        # pathGuard, agentSettings, instructions (AGENTS.md)
+│   │   ├── checkpoints/      # per-turn file snapshots + rewind
+│   │   ├── artifacts/        # versioned per-session artifacts
+│   │   ├── skills/           # SKILL.md format, matcher, install, draft
+│   │   ├── recorder/         # CDP record & replay -> skill
+│   │   └── harness/          # per-model tool-format/streaming profiles
+│   ├── launcher/             # Quick-launcher window + global hotkey
+│   └── utils/                # logger, errorHandler, recovery
 │
 ├── renderer/                  # Renderer process (UI)
-│   ├── renderer.js           # Main renderer logic (2,230 lines)
-│   ├── components/
-│   │   ├── Sidebar.js        # Sidebar component
-│   │   └── SettingsMenu.js   # Settings UI
-│   ├── utils/
-│   │   ├── rendererErrorHandler.js
-│   │   └── shortcuts.js      # Keyboard shortcuts
-│   └── styles/
-│       ├── components/       # Component-specific styles
-│       └── themes/           # Theme files
+│   ├── renderer.js           # Bootstrap, config load, manager wiring
+│   ├── core/AppState.js      # Observable state container (EventEmitter)
+│   ├── core/ShellStore.js    # Assistant/browser shell state (mode, sidebar, dock)
+│   ├── ipc/ipcBridge.js      # Centralized renderer IPC delegation
+│   ├── managers/             # SpaceManager, NavigationManager, LayoutManager,
+│   │                         #   FindBarManager, BrowserViewManager,
+│   │                         #   AgentWorkspaceManager, ViewShellManager
+│   ├── layouts/              # LayoutStrategy + Single/SideBySide/Grid/Stacked/TwoRow
+│   ├── components/           # ChromeBar, TabBar, TabBarActions, TabChromeStrip, AgentPanel,
+│   │   │                     #   CommandPalette, NewTabPicker, LibraryWindow, ReaderView,
+│   │   │                     #   PermissionPrompt, PromptDialog, SiteBlockedPrompt,
+│   │   │                     #   ConfirmDialog, Toast, Tooltip, Icon, VoiceInputButton,
+│   │   │                     #   VoiceCaptureOverlay, WelcomeOverlay
+│   │   ├── agent/            # AnswerView, ToolStream, HistoryRail, ReattachPrompt
+│   │   ├── assistant/        # AgentPanel internals: AssistantShell, AssistantController,
+│   │   │                     #   lanes/, ChatThread, MessageView, Composer, InlinePalette,
+│   │   │                     #   ApprovalCard, PlanPanel, ArtifactsPane, SessionList,
+│   │   │                     #   SessionsDashboard, InboxPane, BrowserDock, RecordBar, …
+│   │   └── settings/         # SettingsView, LLMTab, PermissionsTab, modules/ (appearance, mcpServers, …)
+│   ├── launcher/             # LauncherView for launcher.html
+│   ├── utils/                # rendererErrorHandler, shortcuts, markdown, focusTrap, etc.
+│   └── styles/               # components/* + themes/{light,dark}
 │
-├── scripts/                   # Build & utility scripts (10 essential)
-│   ├── auto-fix.js
-│   ├── build-css.js
-│   ├── health-check.js
-│   ├── post-build-fix.js
-│   ├── pre-build-check.js
-│   └── validate-build.js
+├── shared/                    # Shared modules (main + renderer)
+│   ├── configDefaults.js, configPaths.js
+│   └── llmDefaults.js        # LLM defaults, mergeStartOpts, persistEngineSelection
 │
-├── tests/                     # Test suite
-│   ├── e2e/                  # End-to-end tests
-│   ├── integration/          # Integration tests
-│   ├── unit/                 # Unit tests
-│   ├── helpers/              # Test helpers
-│   ├── mocks/                # Mock modules
-│   └── setup/                # Jest configuration
-│
-├── docs/                      # Documentation
-│   ├── AUTOFLOW_STATE.md
-│   ├── AUTONOMOUS_CODING.md
-│   ├── BUILD_FIXES.md
-│   ├── GEMINI.md
-│   └── PROD_*.md
-│
-├── assets/                    # Icons and images
-│   ├── icon.{ico,icns,png}
-│   └── ai-logos/
-│
-└── Build Configuration
-    ├── package.json           # Dependencies & scripts (34 scripts)
-    ├── electron-builder.json  # Build configuration
-    ├── tsconfig.json          # TypeScript config
-    ├── jest.config.js         # Jest configuration
-    ├── eslint.config.js       # ESLint rules
-    └── .prettierrc.js         # Code formatting
+├── scripts/                   # build-css.js, build-renderer.js, fetch-* asset downloaders, smoke-llm-engines.js
+├── tests/                     # unit/{main,renderer,shared}, integration, e2e
+├── assets/                    # app icons (icon.icns/.ico/.png) + ai-logos/
+└── Build Config: package.json (inline electron-builder), tsconfig.json,
+                  jest.config.js (multi-project), eslint.config.js (flat config)
 ```
+
+Note: file/line counts intentionally omitted — they rot. When in doubt, run `find … | wc -l` or read the directory.
 
 ### Key Files to Understand
 
 **Entry Point Flow:**
 1. `main.js` - Detects platform, sets up single-instance lock, launches main process
-2. `main/index.js` - Sets up Electron app, creates windows, registers IPC handlers
-3. `index.html` - Loads renderer process
-4. `renderer/renderer.js` - Manages UI, cognitizers, browser views
+2. `main/index.js` - Bootstrap: creates window, initializes App orchestrator
+3. `main/App.js` - Initializes all services, registers IPC handlers via `main/ipc/`
+4. `index.html` - Loads renderer process
+5. `renderer/renderer.js` - Loads config, creates AppState + managers, wires IPC bridge
 
 **Core Concepts:**
-- **Cognitizers**: Predefined web pages (LLMs, search engines) accessible via sidebar tabs
-- **Browser View**: Separate view for CTRL+Click links
-- **Multi-Cognition Mode**: Display multiple cognitizers side-by-side
-- **Global Hotkey**: CTRL/CMD+Space to show/hide app window
+- **Spaces**: Predefined ("cognitizer") and ad-hoc web pages, navigated via the tab bar. The legacy term "Cognitizer" still appears in some labels.
+- **Tabs (multi-mode)**: In multi-mode, multiple spaces are *shown* simultaneously (a set, not one selection). `openTabs` is the ordered list; `hiddenTabs` is the subset hidden in multi-mode; `currentSpaceId` is the keyboard-focused tab; clicking a tab toggles show/hide in multi-mode and switches in single-mode.
+- **Browser View**: Separate view for CTRL+Click links.
+- **Global Hotkey**: CTRL/CMD+Space to show/hide app window (Alt+Space on macOS).
+- **AppState**: Observable state container — managers subscribe to state changes instead of globals.
+- **Services**: Main process singletons (config, adblock, sessions, LLM/engine, agent runtime, downloads/history/bookmarks, notifications, permissions, etc).
+- **Managers**: Renderer process controllers (Space, Navigation, Layout, FindBar, BrowserView).
+- **Local LLM**: `LLMService` orchestrates spawning a local inference server: `llama-server` (all platforms), `mlx-openai-server` or oMLX (Apple silicon), or vLLM (NVIDIA on Linux, or Windows via the app's WSL2 distro); `EngineDiscoveryService` probes for installations + caches resolved paths in config. Per-backend launch/health/stop differences live in `main/services/llm/backendRuntime.js`; updater adapters in `main/services/llm/engines/`; guided vLLM setup in `main/services/llm/vllmSetup.js`.
+- **Agent runtime**: `main/agent/AgentRuntime` runs a tool-calling loop over the active webview using primitives in `main/agent/tools/`; UI in `renderer/components/AgentPanel.js` (a facade over `renderer/components/assistant/`), opened via Cmd+Shift+A.
+- **Assistant vs browser mode**: `ViewShellManager` flips the whole window between assistant mode (history rail | chat thread | browser dock) and browser mode (layouts + docked assistant sidebar) on Cmd/Ctrl+E. The dock is the existing `#tab-bar-wrap` restyled in place: never reparent a `<webview>` or artifact iframe (the guest reloads), and a collapsed dock is moved off-screen with `inert`, never `display:none`.
+- **Sessions**: every chat/agent conversation is a branching message tree persisted under `{userData}/sessions/<id>/` (`main/agent/sessions/sessionStore.js`). `sessionManager` runs background sessions concurrently behind `llmGate`; background runs report through `session:event` and the inbox, never the foreground `agent:*` channels.
+- **Permissions**: `main/agent/permissions/permissionEngine.js` decides every tool call. Deny rules beat Bypass; unknown and `mcp.*` tools ask. Modes are Ask / Auto-edit / Plan / Bypass per session. File and shell tools are confined to user-added workspace roots by `workspace/pathGuard.js`; `shell.run` takes an argv array (no shell) and is not a sandbox.
+- **Shell isolation**: the main and launcher windows run with `contextIsolation`, `sandbox` and no Node behind a strict CSP (`script-src 'self'`). Renderer code reaches main only through `main/preload/shell.js` (`window.icShell`); `require('electron')` in renderer code resolves to `renderer/ipc/electronShim.js` at bundle time, and any Node builtin import fails `scripts/build-renderer.js`. Clipboard and OS-shell calls go through `main/ipc/shellHandlers.js`.
+- **IPC sender policy**: `main/utils/ipcSenderPolicy.js` wraps `ipcMain` before any handler registers. Only a window passed to `trustShell` (main, launcher, recovery), from its top frame on a `file:` page, may use any channel. Every other sender (a tab, a pop-up, an artifact frame) gets only `GUEST_CHANNELS`. A new channel that a guest preload sends must be added there, or main refuses it and logs `[ipc] refused`.
+- **Private tabs**: agents never touch them. `tabRegistry` tags them `private` and every `forSession` view hides them. `ScreenshotService` refuses to capture them, and a run started or reattached on one fails with "The agent doesn't run in private tabs". A new private tab loads only after `session:private-ready` confirms the last private session is wiped.
+- **Checkpoints / artifacts / skills**: fs mutations are snapshotted per turn for rewind (shell side-effects are not); artifacts render in a `sandbox="allow-scripts"` iframe loading a document staged in main and served over `ic-artifact://frame/<token>` with a CSP header and a CSP meta first (never `allow-same-origin`, never srcdoc: it would inherit the shell CSP); skills are `SKILL.md` directories under `{userData}/skills/`, and `allowed-tools` only narrows the tool list, never grants permission.
 
 ### Development Commands
 
@@ -106,39 +132,43 @@ InstantCognition/
 npm start
 
 # Run tests
-npm test                  # Unit tests
-npm run test:all         # All tests
+npm test                  # Full suite: 7523 tests across 363 suites (measured 2026-10-23)
+npx jest                 # Same as npm test
 npm run test:coverage    # With coverage
 
 # Code quality
 npm run lint             # Check for issues
 npm run lint:fix         # Auto-fix issues
 npm run typecheck        # TypeScript checking
-npm run fix              # Lint + format
+npm run fix              # eslint --fix
 
 # Build
-./bld_and_cp.sh                    # Auto-detect OS and build
+npm run build:install             # Auto-detect OS and build
 npm run package-win-x64            # Windows x64
 npm run package-mac-arm            # macOS ARM
-npm run build-win-portable         # Windows portable
+npm run build-win                  # Windows installer (electron-builder)
 
 # Verify everything
-npm run verify           # typecheck + lint + test
+npm run verify           # typecheck + lint + full test suite
 ```
 
 ### Important Notes for AI Assistants
 
-1. **Main Process (`main/index.js`)**: Currently 1,794 lines - handles app lifecycle, window management, IPC, ad-blocking, shortcuts, menus. **Future refactoring target**.
+1. **Main Process**: Modularized — `main/index.js` handles bootstrap, `main/App.js` orchestrates services, `main/ipc/` contains domain-split IPC handlers, `main/services/` contains service singletons. Architecture-integrity tests cap line counts per layer (services 300, ipc 100, managers 700, layouts 100), enforced in `tests/integration/architecture-integrity*.test.js`.
 
-2. **Renderer Process (`renderer/renderer.js`)**: Currently 2,230 lines - manages cognitizers, browser view, multi-cognition mode, find-in-page, gestures. **Future refactoring target**.
+2. **Renderer Process**: Modularized — `renderer/renderer.js` handles bootstrap/config, delegates to managers in `renderer/managers/`, layout strategies in `renderer/layouts/`, and centralized IPC in `renderer/ipc/ipcBridge.js`.
 
-3. **Testing**: Use `npm test` frequently. Tests must pass before any major changes are considered complete.
+3. **Testing**: `npm test` and `npx jest` run the same full suite (7523 tests, 363 suites — measured 2026-10-23). Jest uses multi-project config: `node` env for main/shared/integration/e2e, `jsdom` for renderer. The Electron launch smoke (`npm run test:e2e:app`) and the LLM engine jest smoke (`npm run test:e2e:llm`) set `RUN_APP_SMOKE=1` / `RUN_LLM_SMOKE=1` themselves and skip without them; `npm run test:smoke` runs `scripts/smoke-llm-engines.js` directly and skips engines absent on the host.
 
-4. **Configuration**: User settings in `config.json` (gitignored). Template in codebase shows structure.
+4. **Configuration**: User settings in `config.json` (gitignored). Defaults + migrations in `shared/configDefaults.js`. Platform-specific paths in `shared/configPaths.js`. LLM-specific defaults + `mergeStartOpts` / `persistEngineSelection` in `shared/llmDefaults.js`.
 
 5. **Platform-Specific Code**: Windows requires GPU disabled. macOS/Linux don't. See `main.js` for platform detection.
 
-6. **Scripts Directory**: Only essential build/test scripts. Debug/diagnostic scripts have been removed for simplicity.
+6. **IPC Architecture**: IPC handlers are domain-split in `main/ipc/`. Each exports a `register(mainWindow, services)` function. All registered via `main/ipc/index.js:registerAll()`. The renderer communicates via `renderer/ipc/ipcBridge.js`.
+
+7. **Root-Level Wrappers**: `renderer.js` (root) requires `renderer/renderer.js` and is the entry `scripts/build-renderer.js` bundles into `renderer.bundle.js` (plus `launcher.bundle.js`; both gitignored, rebuilt by every start/build script). `preload.js` (root) re-exports `main/preload.js`, the webview guest preload. These exist for Electron's build/packaging. `updater.js` holds the GitHub Releases update check reached from Settings.
+
+8. **Dependencies**: Production deps are minimal — see `package.json`. ESLint uses flat config format (no plugins imported).
 
 ---
 
@@ -160,11 +190,11 @@ npm run verify           # typecheck + lint + test
 |-----------|---------|---------------|----------|
 | *(empty - add your custom tools here)* | | | |
 
-**Standard locations for MCP tools in this project:**
-- `mcp-tools/` - Root directory for all custom MCP tools
-- `mcp-tools/<tool-name>/` - Individual tool directory
-- `mcp-tools/<tool-name>/index.js` - Tool entry point
-- `mcp-tools/<tool-name>/README.md` - Tool documentation
+**MCP tool locations — `mcp-tools/` is a convention that has NOT been created; no such directory exists in this repo.** The in-tree MCP code today:
+- `main/services/McpService.js` - MCP service (main process)
+- `main/ipc/mcpHandlers.js` - MCP IPC handlers
+- `main/agent/tools/mcpTools.js` - MCP tools exposed to the agent runtime
+- `renderer/components/settings/modules/mcpServers.js` - MCP servers settings UI
 
 ### 🛑 Planning & Review Protocol
 

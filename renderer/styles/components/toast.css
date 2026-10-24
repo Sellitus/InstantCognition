@@ -1,0 +1,117 @@
+/* Toast — bottom-right notification stack.
+   Singleton managed by Toast.js. Max 3 visible; auto-dismiss 4s default.
+   Kinds: info | success | warn | error — styled from --status-*-bg + --status-*. */
+
+.toast-stack {
+  position: fixed;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-4);
+  z-index: var(--z-toast);
+  pointer-events: none;
+  max-width: 360px;
+  width: calc(100vw - var(--space-8));
+}
+
+.toast {
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-left-width: 3px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
+  font: var(--font-size-md)/var(--line-height-normal) var(--font-sans);
+  animation: toast-in var(--duration-normal) var(--ease-out);
+}
+
+.toast.toast-leaving {
+  animation: toast-out var(--duration-fast) var(--ease-in) forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(12px); }
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+
+.toast-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+
+.toast-message {
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.toast-action,
+.toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  font: inherit;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+.toast-action { color: var(--accent); font-weight: var(--font-weight-medium); padding: var(--space-2) var(--space-4); }
+.toast-action:hover { background: var(--accent-subtle); }
+.toast-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); margin-left: calc(-1 * var(--space-4)); }
+.toast-close { display: inline-flex; align-items: center; justify-content: center; }
+.toast-close:hover { color: var(--text-primary); background: var(--surface-hover); }
+
+/* Kind-specific accents (left border + icon color) */
+.toast-info    { border-left-color: transparent;    }
+.toast-info    .toast-icon { color: var(--status-info); }
+.toast-success { border-left-color: var(--status-success); }
+.toast-success .toast-icon { color: var(--status-success); }
+.toast-warn    { border-left-color: var(--status-warn);    }
+.toast-warn    .toast-icon { color: var(--status-warn); }
+.toast-error   { border-left-color: var(--status-error);   }
+.toast-error   .toast-icon { color: var(--status-error); }
+
+/* Info toasts get the brand gradient as their leading rail — they're the
+   only kind without a status meaning, so they're the right slot for flare. */
+.toast-info::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  background: var(--flare-edge);
+  opacity: 0.95;
+  pointer-events: none;
+}

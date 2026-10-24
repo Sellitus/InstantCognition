@@ -4,8 +4,10 @@
  */
 
 const { app } = require('electron');
+const externalLinks = require('./main/services/externalLinks');
 
-// Ensure single instance
+// Ensure single instance. A second launch hands its argv (e.g. a link opened
+// from another app on Windows/Linux) to this instance via 'second-instance'.
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   console.log('[InstantCognition] Another instance is already running');
@@ -13,14 +15,16 @@ if (!gotTheLock) {
   process.exit(0);
 }
 
-// Platform-specific initialization
-if (process.platform === 'win32') {
-  // Windows: Disable GPU for compatibility
-  app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('disable-gpu');
-  app.commandLine.appendSwitch('disable-gpu-compositing');
-  app.commandLine.appendSwitch('disable-software-rasterizer');
-}
+// macOS delivers links through open-url, which can fire before ready; a
+// listener added later misses the link that launched the app.
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  externalLinks.openWebUrl(url, 'open-url');
+});
+externalLinks.openFromArgv(process.argv, 'launch command line');
+
+// Hardware acceleration is configured in main/index.js from the
+// settings.hardwareAcceleration preference — do not re-disable it here.
 
 // Environment setup
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';

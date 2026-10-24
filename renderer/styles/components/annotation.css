@@ -1,0 +1,197 @@
+/* Browser dock page tools: the Record & Replay bar (RecordBar) floating over
+   the dock, the annotation comment bubble (AnnotationController), and the
+   pressed states of their rail buttons. Tokens only. */
+
+/* ---- Rail buttons ------------------------------------------------------ */
+
+.assistant-dock-rail .assistant-dock-record[aria-pressed="true"] {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+}
+.assistant-dock-rail .assistant-dock-annotate[aria-pressed="true"] {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.assistant-dock-rail button:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
+}
+
+/* ---- Record bar -------------------------------------------------------- */
+
+.record-bar {
+  position: fixed;
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 70vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-elevated);
+  border-bottom: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.record-bar__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.record-bar__dot {
+  flex: 0 0 auto;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--text-tertiary);
+}
+.record-bar[data-state="recording"] .record-bar__dot {
+  background: var(--status-error);
+  animation: record-bar-pulse 1.2s var(--ease-standard) infinite;
+}
+.record-bar[data-state="error"] .record-bar__dot { background: var(--status-error); }
+.record-bar[data-state="preview"] .record-bar__dot { background: var(--status-success); }
+
+.record-bar__status {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.record-bar[data-state="error"] .record-bar__status { color: var(--status-error); }
+
+.record-bar__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.record-bar__btn,
+.annotation-bubble__btn {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.record-bar__btn:hover,
+.annotation-bubble__btn:hover:not(:disabled) { background: var(--surface-hover); }
+.record-bar__btn:focus-visible,
+.annotation-bubble__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.record-bar__btn--primary,
+.annotation-bubble__btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-on);
+}
+.record-bar__btn--primary:hover,
+.annotation-bubble__btn--primary:hover:not(:disabled) { background: var(--accent-hover); }
+.record-bar__btn--stop {
+  border-color: var(--status-error);
+  color: var(--status-error);
+}
+.annotation-bubble__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.record-bar__notes {
+  margin: 0;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--status-warning-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+}
+.record-bar__preview {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+  overflow-wrap: anywhere;
+}
+.record-bar__source {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@keyframes record-bar-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+body.no-animations .record-bar[data-state="recording"] .record-bar__dot { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .record-bar[data-state="recording"] .record-bar__dot { animation: none; }
+}
+
+/* ---- Annotation bubble ------------------------------------------------- */
+
+.annotation-bubble {
+  position: fixed;
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(20rem, calc(100vw - var(--space-4)));
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+.annotation-bubble__target {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.annotation-bubble__target strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.annotation-bubble__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4.5em;
+  resize: vertical;
+  padding: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+}
+.annotation-bubble__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+.annotation-bubble__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

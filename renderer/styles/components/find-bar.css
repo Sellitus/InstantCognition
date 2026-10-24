@@ -1,0 +1,75 @@
+/* Find bar — content rules only.
+   Visual shell (overlay, positioning, animation) lives in dropdown.css.
+   The .app-dropdown--compact modifier keeps this content-sized so the find
+   surface doesn't expand to fill the viewport in sidebar layouts. */
+
+.find-bar-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.find-input {
+  flex: 1 1 auto;
+  height: 32px;
+  padding: 0 var(--space-4);
+  min-width: 0;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  font: var(--font-size-md)/1 var(--font-sans);
+}
+
+.find-input:focus-visible {
+  border-color: transparent;
+  outline: none;
+  /* Gradient-clipped ring as a small reward when actively typing. The two
+     background layers paint the field surface, then the cyan-magenta edge
+     into the border slot via background-clip. */
+  background:
+    linear-gradient(var(--surface-sunken), var(--surface-sunken)) padding-box,
+    var(--flare-edge) border-box;
+  box-shadow: 0 0 0 2px rgba(47, 185, 214, 0.16), 0 0 18px rgba(255, 36, 134, 0.10);
+}
+
+.find-results {
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  min-width: 70px;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.find-btn {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 var(--space-3);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.find-btn:hover {
+  background: var(--accent-muted);
+  border-color: var(--border-brand);
+  color: var(--accent-hover);
+}
+
+/* Close button leans pink on hover — a tiny warm cue distinguishing
+   "leave" from "navigate". */
+.find-btn--close:hover {
+  color: var(--brand-magenta);
+  border-color: rgba(255, 36, 134, 0.32);
+  background: rgba(255, 36, 134, 0.08);
+  box-shadow: var(--flare-glow-magenta);
+}

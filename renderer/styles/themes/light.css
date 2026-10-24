@@ -1,67 +1,81 @@
-/* Light Theme */
+/* ============================================================
+   Light theme — overrides every semantic token.
+   Reference tokens (spacing, radii, motion, z-index, typography)
+   are theme-invariant and inherited from tokens.css.
+   ============================================================ */
+
 body.theme-light {
-  --surface-container: #f3f4f6;
-  --surface-container-low: #ffffff;
-  --surface-container-high: #e5e7eb;
-  --surface-container-highest: #d1d5db;
-  --surface-dim: #f9fafb;
-  --primary: #0284c7;
-  --primary-dark: #0369a1;
-  --primary-light: #38bdf8;
-  --error: #dc2626;
-  --success: #059669;
-  --warning: #d97706;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-disabled: #9ca3af;
-  --divider-color: rgba(0, 0, 0, 0.08);
-  --overlay: rgba(0, 0, 0, 0.3);
-  
-  /* Component specific */
-  --button-hover: rgba(0, 0, 0, 0.04);
-  --button-active: rgba(0, 0, 0, 0.08);
-  --input-background: rgba(0, 0, 0, 0.02);
-  --input-border: rgba(0, 0, 0, 0.12);
-  --input-focus-border: var(--primary);
-  
-  /* Shadows */
+  color-scheme: light;
+
+  /* Surfaces — four-tone light scale */
+  --surface-sunken: #eef1f5;
+  --surface-base: #f7f9fc;
+  --surface-raised: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-overlay: var(--surface-elevated);
+  --surface-glass: rgba(255, 255, 255, 0.86);
+
+  /* Sheen inverts: a shade at the bottom edge instead of a highlight at the top. */
+  --sheen-rgb: 16, 22, 31;
+  --sheen-angle: 0deg;
+  --sheen-y: -1px;
+
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-active: rgba(0, 0, 0, 0.07);
+
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --border-brand: rgba(0, 137, 171, 0.32);
+
+  /* Text */
+  --text-primary: #1a1c20;
+  --text-secondary: #545963;
+  --text-tertiary: #7e838c;
+  --text-disabled: #aaafb7;
+
+  /* Accent — darkened cyan for contrast on white surfaces */
+  --accent: #0089AB;
+  --accent-hover: #00738F;
+  --accent-active: #005E74;
+  --accent-subtle: rgba(0, 137, 171, 0.13);
+  --accent-muted: rgba(0, 137, 171, 0.07);
+  --accent-on: #ffffff;
+  --accent-rgb: 0, 137, 171;
+
+  /* Status — darker for contrast */
+  --status-success: #0f9d58;
+  --status-success-bg: rgba(15, 157, 88, 0.10);
+  --status-warn: #b37e12;
+  --status-warn-bg: rgba(179, 126, 18, 0.10);
+  --status-error: #c14a4a;
+  --status-error-bg: rgba(193, 74, 74, 0.10);
+  --status-info: #008f86;
+  --status-info-bg: rgba(0, 143, 134, 0.10);
+
+  /* Shadows — softer on light */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
-}
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-overlay: 0 22px 64px rgba(18, 27, 38, 0.20);
 
-/* Adjust component colors for light theme */
-body.theme-light #side-bar {
-  background: linear-gradient(180deg, var(--surface-container) 0%, var(--surface-container-high) 100%);
-}
+  /* Brand flare — gentler on white surfaces; shadows + flare opacity dialed
+     down so the pink side reads as a tint, not a halo. */
+  --brand-glow: 0 8px 22px rgba(18, 27, 38, 0.14), 0 0 22px rgba(0, 220, 255, 0.05), 0 0 30px rgba(255, 36, 134, 0.04);
+  --brand-glow-strong: 0 14px 36px rgba(18, 27, 38, 0.18), 0 0 18px rgba(0, 220, 255, 0.09), 0 0 30px rgba(255, 36, 134, 0.07);
+  --flare-edge: linear-gradient(135deg, rgba(0, 220, 255, 0.55) 0%, rgba(255, 36, 134, 0.55) 100%);
+  --flare-edge-soft: linear-gradient(135deg, rgba(0, 220, 255, 0.24) 0%, rgba(255, 36, 134, 0.26) 100%);
+  --flare-glow-soft: 0 0 16px rgba(0, 220, 255, 0.10), 0 0 26px rgba(255, 36, 134, 0.09);
+  --flare-glow-magenta: 0 0 18px rgba(255, 36, 134, 0.16), 0 4px 12px rgba(18, 27, 38, 0.12);
+  --flare-radial-corners:
+    radial-gradient(circle at 0% 0%, rgba(0, 220, 255, 0.05), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(255, 36, 134, 0.05), transparent 42%);
 
-body.theme-light .dropdown-section > div {
-  background-color: var(--surface-container-low);
-  color: var(--text-primary);
-}
+  --focus-ring: 0 0 0 2px rgba(var(--accent-rgb), 0.42), 0 0 14px rgba(var(--brand-magenta-rgb), 0.10);
 
-body.theme-light .dropdown-section > div:hover {
-  background-color: var(--surface-container-high);
-}
+  --scrollbar-thumb: rgba(0, 0, 0, 0.16);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.30);
 
-body.theme-light .dropdown-section > div.selected {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
-}
-
-body.theme-light .settings-menu > div:first-child {
-  background: var(--surface-container-low);
-}
-
-body.theme-light .settings-header {
-  background: var(--surface-container);
-}
-
-body.theme-light .shortcut-item {
-  background: var(--surface-container);
-}
-
-body.theme-light .shortcut-key {
-  background: var(--surface-container-high);
+  --overlay-backdrop: rgba(0, 0, 0, 0.28);
 }

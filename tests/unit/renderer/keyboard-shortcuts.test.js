@@ -24,66 +24,75 @@ describe('Keyboard Shortcuts Integration', () => {
     };
   });
 
-  describe('Shortcut Recording', () => {
-    test('should start recording mode', () => {
-      const callback = jest.fn();
-      
-      shortcutManager.startRecording(callback);
-      
-      expect(shortcutManager.recording).toBe(true);
-      expect(shortcutManager.recordingCallback).toBe(callback);
-    });
+  // Recording tests removed — recording is now handled directly in SettingsMenu.js
 
-    test('should stop recording mode', () => {
-      shortcutManager.startRecording(jest.fn());
-      
-      shortcutManager.stopRecording();
-      
-      expect(shortcutManager.recording).toBe(false);
-      expect(shortcutManager.recordingCallback).toBeNull();
-    });
-
-    test('should capture key combination', () => {
-      const callback = jest.fn();
-      shortcutManager.startRecording(callback);
-      
-      // Simulate Ctrl+A
+  describe('Key Capture', () => {
+    test('should capture key combination via eventToShortcut', () => {
       const event = {
         ...mockEvent,
         key: 'a',
         ctrlKey: true,
         type: 'keydown'
       };
-      
-      // Call the record handler directly
+
       const key = shortcutManager.eventToShortcut(event);
-      
-      expect(key).toContain('CmdOrCtrl');
+
+      if (process.platform === 'darwin') {
+        expect(key).toContain('Ctrl');
+      } else {
+        expect(key).toContain('CmdOrCtrl');
+      }
       expect(key).toContain('A');
     });
 
-    test('should cancel recording on Escape', () => {
-      const callback = jest.fn();
-      shortcutManager.startRecording(callback);
-      
+    test('should handle Escape key', () => {
       const event = {
         ...mockEvent,
         key: 'Escape',
         type: 'keydown'
       };
-      
+
       const key = shortcutManager.eventToShortcut(event);
-      
       expect(key).toBe('Escape');
+    });
+
+    test('Cmd/Meta + Space serializes Space as a named key, not a literal space char', () => {
+      const event = { ...mockEvent, key: ' ', metaKey: true, type: 'keydown' };
+      const key = shortcutManager.eventToShortcut(event);
+      const expected = process.platform === 'darwin' ? 'Cmd+Space' : 'CmdOrCtrl+Space';
+      expect(key).toBe(expected);
+    });
+  });
+
+  describe('Malformed config tolerance', () => {
+    test('loadShortcuts ignores entries without a string .key', () => {
+      shortcutManager.shortcuts.clear();
+      // Simulates the orphan a prior bug left in user configs:
+      // configBridge.set('settings.shortcuts.window.toggle', value) split on '.'
+      // and wrote `shortcuts.window.toggle` (nested) instead of the flat
+      // dotted key. The resulting entry has no `.key` and used to crash
+      // updateConflictMap via normalizeKey(undefined).
+      const config = {
+        settings: {
+          shortcuts: {
+            'window.toggle': { key: 'Alt+Space', description: 'Toggle Window' },
+            window: { toggle: 'Ctrl+ ' },
+          },
+        },
+      };
+      expect(() => shortcutManager.loadShortcuts(config)).not.toThrow();
+      expect(shortcutManager.getShortcut('window.toggle').key).toBe('Alt+Space');
+      // The orphan was dropped entirely (no shortcut named 'window').
+      expect(shortcutManager.shortcuts.has('window')).toBe(false);
     });
   });
 
   describe('Shortcut Validation', () => {
     test('should detect conflicts correctly', () => {
-      // F1 is assigned to cognitizer.previous by default
+      // F1 is assigned to space.previous by default
       const conflicts = shortcutManager.getConflicts('F1');
       
-      expect(conflicts).toContain('cognitizer.previous');
+      expect(conflicts).toContain('space.previous');
     });
 
     test('should allow non-conflicting shortcuts', () => {
@@ -97,7 +106,7 @@ describe('Keyboard Shortcuts Integration', () => {
       const result = shortcutManager.setShortcut('test.action', 'F1', 'Test Action');
       
       expect(result.success).toBe(false);
-      expect(result.conflicts).toContain('cognitizer.previous');
+      expect(result.conflicts).toContain('space.previous');
     });
   });
 
@@ -106,7 +115,7 @@ describe('Keyboard Shortcuts Integration', () => {
       const categories = shortcutManager.getShortcutsByCategory();
       
       expect(categories).toHaveProperty('navigate');
-      expect(categories).toHaveProperty('cognitizer');
+      expect(categories).toHaveProperty('space');
       expect(categories).toHaveProperty('view');
       expect(categories).toHaveProperty('window');
       expect(categories).toHaveProperty('find');
@@ -115,11 +124,13 @@ describe('Keyboard Shortcuts Integration', () => {
 
     test('should categorize custom shortcuts', () => {
       shortcutManager.setShortcut('custom.test', 'F12', 'Custom Test');
-      
+
       const categories = shortcutManager.getShortcutsByCategory();
-      
-      expect(categories.custom).toBeDefined();
-      expect(categories.custom.length).toBeGreaterThan(0);
+
+      // Custom shortcuts go into "other" since there is no dedicated "custom" category
+      expect(categories.other).toBeDefined();
+      expect(categories.other.length).toBeGreaterThan(0);
+      expect(categories.other.some(s => s.action === 'custom.test')).toBe(true);
     });
   });
 
@@ -153,10 +164,10 @@ describe('Keyboard Shortcuts Integration', () => {
       expect(shortcutManager.getShortcut('navigate.home')).toBeTruthy();
     });
 
-    test('should have all default cognitizer shortcuts', () => {
-      expect(shortcutManager.getShortcut('cognitizer.previous')).toBeTruthy();
-      expect(shortcutManager.getShortcut('cognitizer.next')).toBeTruthy();
-      expect(shortcutManager.getShortcut('cognitizer.close')).toBeTruthy();
+    test('should have all default space shortcuts', () => {
+      expect(shortcutManager.getShortcut('space.previous')).toBeTruthy();
+      expect(shortcutManager.getShortcut('space.next')).toBeTruthy();
+      expect(shortcutManager.getShortcut('space.close')).toBeTruthy();
     });
 
     test('should have zoom shortcuts', () => {

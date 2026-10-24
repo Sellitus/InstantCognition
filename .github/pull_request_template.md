@@ -1,86 +1,33 @@
-## Description
+## What this changes
 
-<!-- Provide a brief description of the changes in this PR -->
+<!-- What the change does, and why. Link the issue it closes. -->
 
-## Type of Change
+Fixes #
 
-<!-- Check the relevant option -->
+## Type of change
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to
-      not work as expected)
-- [ ] Documentation update
-- [ ] Performance improvement
-- [ ] Code refactoring
-- [ ] Dependency update
-- [ ] Security fix
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Refactor
+- [ ] Documentation
+- [ ] Dependency or build change
 
-## Related Issues
+## How it was tested
 
-<!-- Link to related issues -->
+<!-- Which tests you added or ran, and what manual checking you did. -->
 
-Fixes #(issue number)
-
-## Testing
-
-<!-- Describe the tests you ran to verify your changes -->
-
-### Test Configuration
-
-- [ ] OS: Windows
-- [ ] OS: macOS
-- [ ] OS: Linux
-- [ ] Node version: 18.x
-- [ ] Node version: 20.x
-
-### Test Results
-
-- [ ] All unit tests pass
-- [ ] All integration tests pass
-- [ ] All E2E tests pass
-- [ ] Manual testing completed
+- [ ] `npm run verify` passes (typecheck, lint, full suite)
+- [ ] New tests cover the change, and fail without it
+- [ ] Manually exercised on: <!-- Windows / macOS / Linux -->
 
 ## Checklist
 
-<!-- Check all that apply -->
+- [ ] Errors stay visible — nothing new swallows a failure
+- [ ] No unfinished stand-ins or dead code left behind
+- [ ] Docs updated if behaviour or setup changed
+- [ ] Screenshots attached for UI changes
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published
-- [ ] I have run `npm run lint` and fixed any issues
-- [ ] I have run `npm run typecheck` and fixed any issues
-- [ ] I have run `npm audit` and addressed any security vulnerabilities
+## Notes for the reviewer
 
-## Screenshots
-
-<!-- If applicable, add screenshots to help explain your changes -->
-
-## Performance Impact
-
-<!-- Describe any performance implications of your changes -->
-
-- [ ] No performance impact
-- [ ] Performance improvement
-- [ ] Potential performance degradation (explain why it's acceptable)
-
-## Security Considerations
-
-<!-- Describe any security implications of your changes -->
-
-- [ ] No security implications
-- [ ] Security improvement
-- [ ] Requires security review (explain why)
-
-## Breaking Changes
-
-<!-- List any breaking changes and migration instructions -->
-
-## Additional Notes
-
-<!-- Add any additional notes or context about the PR -->
+<!-- Anything worth knowing: tradeoffs, follow-ups, things you are unsure about. -->

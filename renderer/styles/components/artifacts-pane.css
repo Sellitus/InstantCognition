@@ -1,0 +1,148 @@
+/* Artifacts pane — session artifact list, version picker and the sandboxed
+   preview frame (ArtifactsPane.js / ArtifactFrame.js). */
+
+.artifacts-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  height: 100%;
+  padding: var(--space-5);
+  overflow-y: auto;
+  color: var(--text-primary);
+  background: var(--surface-base);
+  font: var(--font-size-md)/var(--line-height-normal) var(--font-sans);
+}
+
+.artifacts-pane__heading {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.artifacts-pane__status {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+.artifacts-pane__status--error {
+  padding: var(--space-3) var(--space-4);
+  color: var(--status-error);
+  background: var(--status-error-bg);
+  border-radius: var(--radius-sm);
+}
+
+.artifacts-pane__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.artifacts-pane__item-btn {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+.artifacts-pane__item-btn:hover:not(:disabled) { background: var(--surface-hover); }
+.artifacts-pane__item-btn[aria-current="true"] {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.artifacts-pane__item-btn:disabled {
+  cursor: not-allowed;
+  color: var(--text-disabled);
+}
+.artifacts-pane__item-btn:focus-visible,
+.artifacts-pane__action:focus-visible,
+.artifacts-pane__retry:focus-visible,
+.artifacts-pane__version:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.artifacts-pane__item-title {
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: anywhere;
+}
+.artifacts-pane__item-meta {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.artifacts-pane__viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.artifacts-pane__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.artifacts-pane__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.artifacts-pane__version,
+.artifacts-pane__action,
+.artifacts-pane__retry {
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+.artifacts-pane__action,
+.artifacts-pane__retry { cursor: pointer; }
+.artifacts-pane__action:hover,
+.artifacts-pane__retry:hover { background: var(--surface-hover); }
+.artifacts-pane__retry { align-self: flex-start; }
+
+.artifacts-pane__notice {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+.artifacts-pane__notice:empty { display: none; }
+.artifacts-pane__notice--error { color: var(--status-error); }
+
+.artifacts-pane__frame {
+  overflow: hidden;
+  background: var(--surface-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+.artifact-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: var(--surface-base);
+}

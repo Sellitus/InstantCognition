@@ -1,67 +1,137 @@
 {
   "name": "instant-cognition",
-  "version": "1.6.2",
-  "description": "A cross-platform app to research information quickly after a press of the hotkey.",
+  "version": "4.0.0",
+  "description": "A hotkey-summoned AI browser: run local models with llama.cpp or MLX, drive the page with an agent, and search the web without leaving the keyboard.",
   "main": "main.js",
+  "license": "MIT",
+  "author": "Sellitus",
+  "homepage": "https://github.com/daemon-summoner/InstantCognition",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daemon-summoner/InstantCognition.git"
+  },
+  "bugs": {
+    "url": "https://github.com/daemon-summoner/InstantCognition/issues"
+  },
+  "keywords": [
+    "electron",
+    "ai",
+    "llm",
+    "local-llm",
+    "llama-cpp",
+    "mlx",
+    "agent",
+    "browser",
+    "productivity",
+    "cross-platform"
+  ],
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "scripts": {
-    "start": "electron .",
-    "package-mac-arm": "electron-packager . InstantCognition --platform=darwin --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/mac-arm --asar=false --copy-files",
-    "package-mac-x64": "electron-packager . InstantCognition --platform=darwin --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/mac-x64 --asar=false --copy-files",
-    "package-win-arm": "electron-packager . InstantCognition --platform=win32 --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/win-arm --asar=false --copy-files",
-    "package-win-x64": "electron-packager . InstantCognition --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/win-x64 --asar=false --copy-files",
-    "package-lin-arm": "electron-packager . InstantCognition --platform=linux --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/lin-arm --asar=false --copy-files",
-    "package-lin-x64": "electron-packager . InstantCognition --platform=linux --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/lin-x64 --asar=false --copy-files",
-    "build-mac-x64": "electron-builder --mac --x64 && pkg updater.js --target node18-macos-x64 --output dist/updater-mac",
-    "build-mac-arm": "electron-builder --mac --arm64 && pkg updater.js --target node18-macos-arm64 --output dist/updater-mac-arm64",
-    "build-win-portable": "electron-builder --win portable && pkg updater.js --target node18-win-x64 --output dist/updater.exe && pkg updater.js --target node18-win-arm64 --output dist/updater-arm64.exe",
+    "build-css": "node scripts/build-css.js",
+    "fetch-llama-server": "node scripts/fetch-llama-server.js",
+    "fetch-mlx-runtime": "node scripts/fetch-mlx-runtime.js",
+    "fetch-omlx-runtime": "node scripts/fetch-omlx-runtime.js",
+    "start": "node scripts/build-css.js && node scripts/build-renderer.js && node scripts/fetch-moonshine-model.js && electron .",
+    "package-mac-arm": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && MLX_PLATFORM=darwin MLX_ARCH=arm64 node scripts/fetch-mlx-runtime.js && OMLX_PLATFORM=darwin OMLX_ARCH=arm64 node scripts/fetch-omlx-runtime.js && node scripts/fetch-moonshine-model.js && electron-packager . InstantCognition --platform=darwin --arch=arm64 --overwrite --icon=assets/icon.icns --out=builds/mac-arm --asar=false",
+    "package-mac-x64": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-packager . InstantCognition --platform=darwin --arch=x64 --overwrite --icon=assets/icon.icns --out=builds/mac-x64 --asar=false",
+    "package-win-arm": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=win32 LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-packager . InstantCognition --platform=win32 --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/win-arm --asar=false",
+    "package-win-x64": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=win32 LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-packager . InstantCognition --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/win-x64 --asar=false",
+    "package-lin-arm": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=linux LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-packager . InstantCognition --platform=linux --arch=arm64 --overwrite --icon=assets/icon.ico --out=builds/lin-arm --asar=false",
+    "package-lin-x64": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=linux LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-packager . InstantCognition --platform=linux --arch=x64 --overwrite --icon=assets/icon.ico --out=builds/lin-x64 --asar=false",
+    "build-mac-x64": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-builder --mac --x64 --publish never",
+    "build-mac-arm": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && MLX_PLATFORM=darwin MLX_ARCH=arm64 node scripts/fetch-mlx-runtime.js && OMLX_PLATFORM=darwin OMLX_ARCH=arm64 node scripts/fetch-omlx-runtime.js && node scripts/fetch-moonshine-model.js && electron-builder --mac --arm64 --publish never",
+    "build-mac": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && MLX_PLATFORM=darwin MLX_ARCH=arm64 node scripts/fetch-mlx-runtime.js && OMLX_PLATFORM=darwin OMLX_ARCH=arm64 node scripts/fetch-omlx-runtime.js && node scripts/fetch-moonshine-model.js && electron-builder --mac --arm64 --x64 --publish never",
+    "build-win": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=win32 LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=win32 LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-builder --win --publish never",
+    "build-linux-x64": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=linux LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-builder --linux --x64 --publish never",
+    "build-linux-arm64": "node scripts/build-css.js && node scripts/build-renderer.js && LLAMA_PLATFORM=linux LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && node scripts/fetch-moonshine-model.js && electron-builder --linux --arm64 --publish never",
+    "fetch-all-llama-servers": "LLAMA_PLATFORM=darwin LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=darwin LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=linux LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=linux LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=win32 LLAMA_ARCH=x64 node scripts/fetch-llama-server.js && LLAMA_PLATFORM=win32 LLAMA_ARCH=arm64 node scripts/fetch-llama-server.js",
     "debug": "electron . --inspect",
-    "test": "jest tests/unit/main/utils/ --runInBand --forceExit",
-    "test:all": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:unit": "jest --testPathPattern=\"tests/.*\\.test\\.(js|ts)\"",
-    "test:integration": "jest --testPathPattern=\"tests/integration/.*\\.test\\.(js|ts)\"",
-    "test:e2e": "jest --testPathPattern=\"tests/e2e/.*\\.test\\.(js|ts)\"",
+    "test": "jest --watchman=false",
+    "test:watch": "jest --watch --watchman=false",
+    "test:coverage": "jest --coverage --watchman=false",
+    "test:unit": "jest --watchman=false --testPathPatterns=\"tests/unit/\"",
+    "test:integration": "jest --watchman=false --testPathPatterns=\"tests/integration/.*\\.test\\.(js|ts)\"",
+    "test:e2e": "jest --watchman=false --testPathPatterns=\"tests/e2e/.*\\.test\\.(js|ts)\"",
+    "test:e2e:sweep": "RUN_E2E_SWEEP=1 jest --watchman=false --runInBand --testPathPatterns=\"tests/e2e/featureSweep\\.test\\.js\"",
+    "test:e2e:assistant": "RUN_ASSISTANT_E2E=1 jest --watchman=false --runInBand --testPathPatterns=\"tests/e2e/assistantFlows\\.test\\.js\"",
+    "test:e2e:assistant-live": "RUN_LLM_E2E=1 jest --watchman=false --runInBand --testPathPatterns=\"tests/e2e/assistantLive\\.test\\.js\"",
+    "test:e2e:app": "RUN_APP_SMOKE=1 jest --watchman=false --testPathPatterns=\"tests/e2e/appLaunch\\.test\\.js\"",
+    "test:e2e:llm": "RUN_LLM_SMOKE=1 jest --watchman=false --testPathPatterns=\"tests/e2e/llmEngines\\.smoke\\.test\\.js\"",
+    "test:smoke": "node scripts/smoke-llm-engines.js",
+    "test:smoke:no-download": "SKIP_MODEL_DOWNLOAD=1 node scripts/smoke-llm-engines.js",
     "build:ts": "tsc --noEmit",
     "build:test": "electron-builder --dir --config.asar=false",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "test:security": "npm audit && eslint . --ext .js,.jsx,.ts,.tsx",
-    "test:memory": "jest --testPathPattern=\"tests/performance/.*\\.test\\.(js|ts)\" --detectLeaks",
-    "prepare": "husky install",
-    "fix": "npm run lint:fix && npm run prettier:fix",
-    "prettier:fix": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "test:security": "npm audit --omit=dev",
+    "prepare": "husky",
+    "fix": "npm run lint:fix",
     "precommit:fix": "lint-staged --allow-empty",
     "verify": "npm run typecheck && npm run lint && npm test",
     "verify:fix": "npm run fix && npm run verify",
     "clean": "rm -rf builds dist out node_modules package-lock.json",
-    "reset": "npm run clean && npm install --legacy-peer-deps",
-    "build:fixed": "bash bld_and_cp_fixed.sh"
+    "reset": "npm run clean && npm install",
+    "build:install": "bash build_install.sh",
+    "build:fixed": "bash build_install.sh"
   },
   "build": {
     "productName": "InstantCognition",
-    "appId": "sellitus.net.instantcognition",
+    "directories": {
+      "output": "builds"
+    },
+    "appId": "net.sellitus.instantcognition",
+    "protocols": [
+      {
+        "name": "Web URL",
+        "schemes": [
+          "http",
+          "https"
+        ]
+      }
+    ],
     "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "daemon-summoner",
+        "repo": "InstantCognition"
+      }
+    ],
     "files": [
       "main.js",
       "main.css",
       "main.combined.css",
       "renderer.js",
+      "renderer.bundle.js",
+      "launcher.bundle.js",
       "index.html",
+      "launcher.html",
       "preload.js",
       "assets/",
       "renderer/",
-      "docs/",
       "main/**/*",
-      "config.json",
+      "shared/",
       "updater.js",
       "!**/*.test.js",
       "!tests/**/*"
     ],
+    "extraResources": [
+      "LICENSE",
+      "THIRD_PARTY_LICENSES.md"
+    ],
     "win": {
       "icon": "assets/icon.ico",
       "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
         {
           "target": "portable",
           "arch": [
@@ -69,73 +139,166 @@
             "arm64"
           ]
         }
+      ],
+      "extraResources": [
+        {
+          "from": "vendor/llama-server/win32-${arch}",
+          "to": "llama-server",
+          "filter": [
+            "**/*",
+            "!.gitkeep"
+          ]
+        },
+        {
+          "from": "vendor/moonshine",
+          "to": "moonshine",
+          "filter": [
+            "**/*",
+            "!**/test_wavs/**",
+            "!.gitkeep"
+          ]
+        }
       ]
     },
     "portable": {
       "artifactName": "InstantCognition-Portable-${arch}.exe"
     },
-    "extraFiles": [
-      {
-        "from": "dist/",
-        "to": "resources",
-        "filter": [
-          "updater*"
-        ]
-      }
-    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "InstantCognition-Setup-${arch}.exe",
+      "include": "build/installer.nsh"
+    },
     "mac": {
-      "icon": "assets/icon.ico",
+      "icon": "assets/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
-        "LSUIElement": true
-      }
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "InstantCognition uses the microphone for voice input and for websites you allow to use it.",
+        "NSCameraUsageDescription": "InstantCognition uses the camera for websites you allow to use it."
+      },
+      "extraResources": [
+        {
+          "from": "vendor/llama-server/darwin-${arch}",
+          "to": "llama-server",
+          "filter": [
+            "**/*",
+            "!.gitkeep"
+          ]
+        },
+        {
+          "from": "vendor/mlx-python/darwin-${arch}",
+          "to": "mlx-python",
+          "filter": [
+            "**/*",
+            "!.gitkeep",
+            "!**/__pycache__/**"
+          ]
+        },
+        {
+          "from": "vendor/omlx-python/darwin-${arch}",
+          "to": "omlx-python",
+          "filter": [
+            "**/*",
+            "!.gitkeep",
+            "!**/__pycache__/**"
+          ]
+        },
+        {
+          "from": "vendor/moonshine",
+          "to": "moonshine",
+          "filter": [
+            "**/*",
+            "!**/test_wavs/**",
+            "!.gitkeep"
+          ]
+        }
+      ]
     },
     "linux": {
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "target": [
+        "AppImage"
+      ],
+      "extraResources": [
+        {
+          "from": "vendor/llama-server/linux-${arch}",
+          "to": "llama-server",
+          "filter": [
+            "**/*",
+            "!.gitkeep"
+          ]
+        },
+        {
+          "from": "vendor/moonshine",
+          "to": "moonshine",
+          "filter": [
+            "**/*",
+            "!**/test_wavs/**",
+            "!.gitkeep"
+          ]
+        }
+      ]
     }
   },
   "devDependencies": {
     "@babel/core": "^7.27.4",
     "@babel/preset-env": "^7.27.2",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
-    "@electron/packager": "^18.3.6",
+    "@electron/packager": "20.3.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.34.0",
-    "@typescript-eslint/parser": "^8.34.0",
-    "asar": "^3.2.0",
-    "babel-jest": "^30.0.0",
-    "electron": "^36.4.0",
+    "babel-jest": "30.5.2",
+    "electron": "^44.9.3",
     "electron-builder": "^26.0.12",
+    "esbuild": "0.28.2",
     "eslint": "^9.29.0",
-    "eslint-plugin-jest": "^28.14.0",
-    "eslint-plugin-security": "^3.0.1",
+    "events": "3.3.0",
     "globals": "^16.2.0",
     "husky": "^9.1.7",
-    "jest": "^30.0.0",
-    "jest-environment-jsdom": "^30.0.0",
+    "jest": "30.5.2",
+    "jest-environment-jsdom": "30.5.2",
     "jest-html-reporters": "^3.1.7",
-    "jest-leak-detector": "^30.0.0",
-    "jest-watch-typeahead": "^2.2.2",
-    "jsdom": "^26.1.0",
+    "jest-watch-typeahead": "^3.0.1",
+    "jsdom": "30.1.3",
     "lint-staged": "^16.1.2",
-    "memlab": "^1.1.59",
-    "node": "^24.2.0",
-    "pkg": "^5.8.1",
     "playwright": "^1.53.0",
-    "prettier": "^3.5.3",
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@cliqz/adblocker-electron": "^1.34.0",
+    "@ghostery/adblocker-electron": "2.20.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "cross-fetch": "^4.1.0",
-    "dns-over-tls": "^0.0.9",
+    "diff": "9.0.0",
+    "dompurify": "3.4.17",
     "electron-prompt": "^1.7.0",
-    "npm": "11.4",
-    "os": "^0.1.2",
-    "tslib": "^2.8.1",
-    "update-electron-app": "^3.1.1",
-    "winston": "^3.17.0"
+    "electron-updater": "^6.8.9",
+    "extract-zip": "^2.0.1",
+    "highlight.js": "11.12.0",
+    "marked": "18.0.14",
+    "mermaid": "12.1.0",
+    "picomatch": "4.0.7",
+    "sherpa-onnx-node": "^1.13.0",
+    "tldts-experimental": "7.4.18",
+    "winston": "^3.17.0",
+    "yaml": "2.9.1"
+  },
+  "overrides": {
+    "jest-environment-jsdom": {
+      "jsdom": "$jsdom"
+    },
+    "test-exclude": "8.0.0",
+    "global-agent": "4.1.3"
+  },
+  "allowScripts": {
+    "electron": true
   }
 }

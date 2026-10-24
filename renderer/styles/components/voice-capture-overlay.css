@@ -1,0 +1,89 @@
+/* Voice capture chip — small, non-intrusive pill that floats above the page
+   while recording. It NEVER becomes a full-screen modal: the user can keep
+   typing/clicking elsewhere. Click the chip (mousedown — no focus steal) or
+   press Esc to stop. */
+
+.voice-chip {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-8);
+  transform: translate(-50%, var(--space-6));
+  z-index: var(--z-toast, 1500);
+  display: none;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-overlay);
+  font-size: var(--font-size-sm);
+  user-select: none;
+  cursor: pointer;
+  pointer-events: auto;        /* ONLY the chip catches clicks — never the rest of the page */
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard),
+              transform var(--duration-normal) var(--ease-out);
+}
+.voice-chip.is-visible {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.voice-chip:hover { border-color: transparent; filter: brightness(1.06); }
+.voice-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.voice-chip-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--status-error);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-error) 55%, transparent);
+  animation: voice-chip-pulse 1.1s ease-in-out infinite;
+  flex: 0 0 auto;
+}
+.voice-chip.is-transcribing .voice-chip-dot {
+  animation: voice-chip-spin 0.9s linear infinite;
+  background: var(--accent);
+  border-radius: var(--radius-xs);
+}
+@keyframes voice-chip-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-error) 55%, transparent); }
+  50%      { transform: scale(1.15); box-shadow: 0 0 0 8px color-mix(in srgb, var(--status-error) 0%, transparent); }
+}
+@keyframes voice-chip-spin {
+  to { transform: rotate(360deg); }
+}
+
+.voice-chip-label { font-weight: var(--font-weight-medium); white-space: nowrap; }
+.voice-chip-hint  { font-size: var(--font-size-xs); color: var(--text-secondary); white-space: nowrap; }
+
+.voice-chip-meter {
+  display: inline-block;
+  width: 60px;
+  height: 4px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.voice-chip-meter-bar {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--brand-magenta), var(--status-error));
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 50ms linear;
+}
+.voice-chip.is-transcribing .voice-chip-meter { display: none; }
+.voice-chip.is-transcribing .voice-chip-hint { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-chip-dot,
+  .voice-chip.is-transcribing .voice-chip-dot { animation: none; }
+  .voice-chip-meter-bar { transition: none; }
+}
+body.no-animations .voice-chip-dot,
+body.no-animations .voice-chip.is-transcribing .voice-chip-dot { animation: none; }

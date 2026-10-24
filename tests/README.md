@@ -7,14 +7,16 @@ designed to catch bugs before runtime.
 
 ```
 tests/
-├── unit/               # Unit tests for individual components
-│   ├── main/          # Main process tests
-│   └── renderer/      # Renderer process tests
-├── integration/       # Integration tests for IPC communication
-├── e2e/              # End-to-end tests with Playwright
-├── performance/      # Performance and memory leak tests
-├── mocks/           # Mock implementations
-└── setup/           # Test setup and configuration
+├── unit/               # unit tests, per process
+│   ├── main/           # services, IPC handlers, agent runtime, utils
+│   ├── renderer/       # components and managers
+│   └── shared/         # shared modules
+├── integration/        # cross-layer wiring and architecture caps
+├── e2e/                # Playwright end-to-end tests
+│   └── helpers/        # e2e harness
+├── helpers/            # shared fixtures (testUtils, mockLlmQueue)
+├── mocks/              # electron, style and file mocks
+└── README.md           # this file
 ```
 
 ## Running Tests
@@ -37,8 +39,8 @@ npm run test:integration
 # E2E tests
 npm run test:e2e
 
-# Performance tests
-npm run test:memory
+# Real-engine LLM smoke tests
+npm run test:e2e:llm
 ```
 
 ### Working Tests Without Manual Intervention
@@ -48,12 +50,12 @@ to avoid launching the actual application. The following tests run successfully
 without manual intervention:
 
 ```bash
-# Run utility tests (config manager, logger)
+# Run the main-process utility tests
 npm test -- tests/unit/main/utils/ --runInBand --forceExit
 
 # Run specific working tests
 npm test -- tests/unit/main/utils/logger.simple.test.js --runInBand --forceExit
-npm test -- tests/unit/main/utils/config.test.js --runInBand --forceExit
+npm test -- tests/unit/main/services/ConfigService.test.js --runInBand --forceExit
 ```
 
 ## Test Coverage
@@ -76,12 +78,8 @@ The test suite includes:
 
    - Full application workflow
    - User interactions
-   - Multi-cognitizer scenarios
-
-4. **Performance Tests**
-   - Memory leak detection
-   - Performance benchmarks
-   - Resource usage monitoring
+   - Multi-space scenarios
+   - Real-engine LLM smoke tests
 
 ## Known Issues and Workarounds
 
@@ -109,7 +107,7 @@ When adding new tests:
 
 1. **For Electron-dependent code**: Use the mocking pattern from
    `logger.simple.test.js`
-2. **For utilities**: Follow the pattern in `config.test.js`
+2. **For utilities**: Follow the pattern in `tests/unit/main/utils/errorHandler.test.js`
 3. **Always clean up**: Reset modules and mocks in `beforeEach`
 4. **Mock file system**: Prevent actual file operations during tests
 

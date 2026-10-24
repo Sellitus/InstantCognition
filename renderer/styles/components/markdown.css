@@ -1,0 +1,141 @@
+/* Markdown extensions rendered by renderer/utils/markdown.js: tables, task
+   lists, highlighted code blocks and their copy button. Base block styles
+   (.md-h, .md-p, .md-code, …) live in agent-panel.css. */
+
+/* ---------- Tables ---------- */
+.md .md-table-wrap {
+  margin: 0.6em 0;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.md .md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.md .md-table th,
+.md .md-table td {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+.md .md-table th {
+  background: var(--surface-overlay);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+.md .md-table th[align="center"],
+.md .md-table td[align="center"] { text-align: center; }
+.md .md-table th[align="right"],
+.md .md-table td[align="right"] { text-align: right; }
+.md .md-table tbody tr:last-child td { border-bottom: 0; }
+.md .md-table tbody tr:hover { background: var(--surface-hover); }
+
+/* ---------- Task lists ---------- */
+.md .md-list:has(> li > .md-task) {
+  list-style: none;
+  padding-left: var(--space-2);
+}
+.md .md-task {
+  margin: 0 var(--space-3) 0 0;
+  vertical-align: -1px;
+  accent-color: var(--accent);
+}
+
+/* ---------- Strikethrough ---------- */
+.md del { color: var(--text-secondary); }
+
+/* ---------- Code block chrome ---------- */
+.md pre.md-code { padding-top: 1.6em; }
+.md pre.md-code .md-code-lang {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.md .md-copy {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+.md pre.md-code:hover .md-copy,
+.md .md-copy:focus-visible,
+.md .md-copy.md-copy--done,
+.md .md-copy.md-copy--error { opacity: 1; }
+.md pre.md-code:hover .md-code-lang,
+.md pre.md-code:focus-within .md-code-lang { opacity: 0; }
+.md .md-copy:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.md .md-copy:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.md .md-copy.md-copy--done {
+  color: var(--status-success);
+  border-color: var(--status-success);
+  background: var(--status-success-bg);
+}
+.md .md-copy.md-copy--error {
+  color: var(--status-error);
+  border-color: var(--status-error);
+  background: var(--status-error-bg);
+}
+
+/* ---------- highlight.js token classes ---------- */
+.md .hljs { color: var(--text-primary); }
+.md .hljs-keyword,
+.md .hljs-selector-tag,
+.md .hljs-built_in,
+.md .hljs-literal,
+.md .hljs-type,
+.md .hljs-doctag { color: var(--syntax-keyword); }
+.md .hljs-string,
+.md .hljs-regexp,
+.md .hljs-template-tag,
+.md .hljs-symbol,
+.md .hljs-char.escape_ { color: var(--syntax-string); }
+.md .hljs-number,
+.md .hljs-bullet,
+.md .hljs-link { color: var(--syntax-number); }
+.md .hljs-comment,
+.md .hljs-quote { color: var(--syntax-comment); font-style: italic; }
+.md .hljs-title.function_,
+.md .hljs-function .hljs-title { color: var(--syntax-function); }
+.md .hljs-title,
+.md .hljs-title.class_,
+.md .hljs-section,
+.md .hljs-selector-id,
+.md .hljs-selector-class { color: var(--syntax-title); }
+.md .hljs-attr,
+.md .hljs-attribute,
+.md .hljs-property,
+.md .hljs-params,
+.md .hljs-selector-attr,
+.md .hljs-selector-pseudo { color: var(--syntax-attr); }
+.md .hljs-tag,
+.md .hljs-name { color: var(--syntax-tag); }
+.md .hljs-variable,
+.md .hljs-template-variable,
+.md .hljs-subst { color: var(--syntax-variable); }
+.md .hljs-meta,
+.md .hljs-meta .hljs-keyword,
+.md .hljs-operator,
+.md .hljs-punctuation { color: var(--syntax-meta); }
+.md .hljs-addition { color: var(--syntax-addition); }
+.md .hljs-deletion { color: var(--syntax-deletion); }
+.md .hljs-emphasis { font-style: italic; }
+.md .hljs-strong { font-weight: var(--font-weight-bold); }

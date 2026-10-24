@@ -1,0 +1,141 @@
+/* Quick launcher window (launcher.html). The window itself is transparent on
+   macOS, so the card carries the surface, radius and border; elsewhere the
+   window is opaque and the card simply fills it. */
+
+body.launcher-body {
+  display: block;
+  height: 100vh;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.launcher {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-overlay);
+}
+
+.launcher-form {
+  flex: 0 0 auto;
+  padding: var(--space-6) var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.launcher-field {
+  position: relative;
+  display: block;
+}
+
+.launcher-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xl);
+  line-height: 1.4;
+  caret-color: var(--accent);
+}
+
+/* The launcher window is this input's frame; a ring inside it reads as a stray box. */
+.launcher-input:focus-visible {
+  box-shadow: none;
+}
+
+.launcher-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xl);
+}
+
+/* Visually hidden, still announced. */
+.launcher-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.launcher-status {
+  flex: 0 0 auto;
+  padding: var(--space-4) var(--space-7) 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.launcher-status.is-error {
+  color: var(--status-error);
+}
+
+.launcher-answer {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-7) var(--space-6);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  user-select: text;
+}
+
+.launcher-answer:empty {
+  padding: 0;
+}
+
+.launcher-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-7);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.launcher-keys kbd {
+  margin: 0 var(--space-1) 0 var(--space-4);
+  padding: 1px 5px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.launcher-keys kbd:first-child {
+  margin-left: 0;
+}
+
+.launcher-open {
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-md);
+  background: var(--accent-subtle);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.launcher-open:hover {
+  border-color: var(--accent);
+}
+
+.launcher-open:focus-visible {
+  box-shadow: var(--focus-ring);
+}

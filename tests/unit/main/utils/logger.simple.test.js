@@ -41,80 +41,41 @@ describe('Logger Simple Tests', () => {
     expect(typeof logger.debug).toBe('function');
   });
 
-  test('logger creates correct log path on macOS', () => {
+  test('logger writes into Electron userData/logs when app is available', () => {
     const mockTransport = {};
 
     jest.doMock('winston', () => ({
-      createLogger: jest.fn(() => ({
-        info: jest.fn(),
-        error: jest.fn(),
-        warn: jest.fn(),
-        debug: jest.fn(),
-      })),
-      format: {
-        json: jest.fn(() => 'json-format'),
-      },
-      transports: {
-        File: jest.fn(() => mockTransport),
-      },
+      createLogger: jest.fn(() => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() })),
+      format: { json: jest.fn(() => 'json-format') },
+      transports: { File: jest.fn(() => mockTransport) },
     }));
-
-    jest.doMock('fs', () => ({
-      existsSync: jest.fn(() => false),
-      mkdirSync: jest.fn(),
-    }));
-
-    jest.doMock('os', () => ({
-      platform: jest.fn(() => 'darwin'),
-      homedir: jest.fn(() => '/Users/testuser'),
-    }));
+    jest.doMock('fs', () => ({ existsSync: jest.fn(() => false), mkdirSync: jest.fn() }));
+    jest.doMock('electron', () => ({ app: { getPath: jest.fn(() => '/Users/testuser/Library/Application Support/InstantCognition') } }));
 
     const fs = require('fs');
     const winston = require('winston');
-
     require('../../../../main/utils/logger');
 
-    expect(fs.mkdirSync).toHaveBeenCalledWith('/Users/testuser/.instant-cognition', {
-      recursive: true,
-    });
+    expect(fs.mkdirSync).toHaveBeenCalledWith('/Users/testuser/Library/Application Support/InstantCognition/logs', { recursive: true });
     expect(winston.transports.File).toHaveBeenCalledWith({
-      filename: '/Users/testuser/.instant-cognition/debug.log',
+      filename: '/Users/testuser/Library/Application Support/InstantCognition/logs/debug.log',
     });
   });
 
-  test('logger creates correct log path on Windows', () => {
+  test('logger falls back to ~/.instant-cognition/logs when electron unavailable', () => {
     jest.doMock('winston', () => ({
-      createLogger: jest.fn(() => ({
-        info: jest.fn(),
-        error: jest.fn(),
-        warn: jest.fn(),
-        debug: jest.fn(),
-      })),
-      format: {
-        json: jest.fn(() => 'json-format'),
-      },
-      transports: {
-        File: jest.fn(() => ({})),
-      },
+      createLogger: jest.fn(() => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() })),
+      format: { json: jest.fn(() => 'json-format') },
+      transports: { File: jest.fn(() => ({})) },
     }));
-
-    jest.doMock('fs', () => ({
-      existsSync: jest.fn(() => true),
-      mkdirSync: jest.fn(),
-    }));
-
-    jest.doMock('os', () => ({
-      platform: jest.fn(() => 'win32'),
-      homedir: jest.fn(() => 'C:\\Users\\testuser'),
-    }));
+    jest.doMock('fs', () => ({ existsSync: jest.fn(() => true), mkdirSync: jest.fn() }));
+    jest.doMock('os', () => ({ platform: jest.fn(() => 'win32'), homedir: jest.fn(() => '/home/u') }));
+    jest.doMock('electron', () => { throw new Error('electron not available'); });
 
     const winston = require('winston');
-
     require('../../../../main/utils/logger');
 
     const fileCall = winston.transports.File.mock.calls[0][0];
-    expect(fileCall.filename).toContain('debug.log');
-    // The logger uses __dirname for Windows, which will still be a Unix path in tests
-    // So we just check that it contains debug.log, not the path style
+    expect(fileCall.filename).toBe('/home/u/.instant-cognition/logs/debug.log');
   });
 });

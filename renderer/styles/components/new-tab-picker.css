@@ -1,0 +1,209 @@
+/* NewTabPicker — content rules only.
+   Visual shell (overlay, positioning, animation) lives in dropdown.css. */
+
+.new-tab-picker-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-7);
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.new-tab-picker-search {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 44px;
+  padding: 0 var(--space-6);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.new-tab-picker-search::placeholder {
+  color: var(--text-tertiary);
+}
+
+.new-tab-picker-search:focus-visible {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface-sunken), var(--surface-sunken)) padding-box,
+    var(--flare-edge) border-box;
+  box-shadow: 0 0 0 2px rgba(47, 185, 214, 0.16), 0 0 22px rgba(255, 36, 134, 0.10);
+}
+
+/* Address-bar suggestions sit in the flow under the input instead of floating
+   over the picker rows, so the navigate/ask rows stay visible beneath them.
+   omnibox.css styles the list; OmniboxSuggest sets its width to the input's. */
+.new-tab-picker-content > .omnibox-list {
+  position: static;
+  flex: 0 0 auto;
+  box-shadow: none;
+}
+
+.new-tab-picker-url-option {
+  display: none;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-overlay);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard);
+}
+
+.new-tab-picker-url-option.visible { display: block; }
+.new-tab-picker-url-option:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.new-tab-picker-url-option.highlighted {
+  background: var(--accent-subtle);
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+/* Ask-the-agent quick option — shows when typed text isn't a URL but looks
+   like a question/sentence. Visually distinct from the URL option (accent
+   tint) so it reads as a different action. */
+.new-tab-picker-ask-option {
+  padding: var(--space-4) var(--space-5);
+  background: var(--accent-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-brand);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-style: italic;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.new-tab-picker-ask-option:hover,
+.new-tab-picker-ask-option.highlighted {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.new-tab-picker-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.new-tab-picker-group-title {
+  position: relative;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-4);
+  font-weight: var(--font-weight-semibold);
+}
+/* Tiny gradient cap on each group label — feels like a chapter marker. */
+.new-tab-picker-group-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 11px;
+  border-radius: var(--radius-full);
+  background: var(--flare-edge);
+  opacity: 0.85;
+}
+
+.new-tab-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.new-tab-picker-card {
+  padding: var(--space-5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--surface-overlay);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.new-tab-picker-card:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+.new-tab-picker-card.highlighted {
+  border-color: var(--border-brand);
+  background: var(--accent-subtle);
+}
+
+.new-tab-picker-card.is-open {
+  background: var(--accent-subtle);
+  border-color: var(--border-brand);
+  /* Gradient bar pinned to the leading edge — replaces the flat accent rail
+     so the "open in this space" cards stand out without being a wall of teal. */
+  box-shadow:
+    inset 3px 0 0 0 transparent,
+    var(--flare-glow-soft);
+  background:
+    linear-gradient(90deg, var(--flare-edge) 0 3px, transparent 3px) padding-box,
+    var(--accent-subtle);
+}
+.new-tab-picker-card.is-open .new-tab-picker-card-name {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.new-tab-picker-card.is-open .new-tab-picker-card-icon {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.new-tab-picker-card-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.new-tab-picker-card-name {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-tab-picker-empty {
+  text-align: center;
+  padding: var(--space-7);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-md);
+}

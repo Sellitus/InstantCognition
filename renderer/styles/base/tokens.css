@@ -1,0 +1,268 @@
+/* ============================================================
+   InstantCognition Design Tokens
+   Single source of truth for the entire app.
+   Edit here, theme overrides live in themes/light.css.
+   ============================================================ */
+
+:root {
+  /* ---------- Reference: scales (theme-invariant) ---------- */
+
+  /* Spacing — 2px base, used in multiples */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 24px;
+  --space-8: 32px;
+  --space-9: 40px;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 9999px;
+
+  /* Motion — three durations cover the whole app */
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Z-index scale */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 50;
+  --z-overlay: 100;
+  --z-modal: 1000;
+  --z-popover: 1200; /* portalled popovers that must paint over a modal dropdown */
+  --z-fx: 1400; /* transient effect overlay: above modals and popovers, below toasts */
+  --z-toast: 1500;
+  --z-drag: 2000;
+
+  /* Typography
+     Stack starts with Inter (preferred designer UI face when installed) and
+     falls through to the platform's modern system UI font. SF Pro Text on
+     macOS, Segoe UI Variable on Win11, then generics. */
+  --font-sans: 'Inter', 'Inter Variable', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Bumped one notch from the previous 11/12/13/14/16/18 ramp for legibility. */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 17px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+
+  /* Slightly heavier baseline weight reads cleaner on dark UI. Variable fonts
+     interpolate 450 smoothly; static fonts round to 500 — both look good. */
+  --font-weight-regular: 450;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 720;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.45;
+  --line-height-relaxed: 1.6;
+
+  /* Icon sizing */
+  --icon-size: 16px;
+  --icon-size-sm: 14px;
+  --icon-size-lg: 20px;
+
+  /* Chrome metrics */
+  --chrome-sidebar-width-collapsed: 52px;
+  --sidebar-expanded-width: 220px; /* user-overridable via Appearance */
+  /* Assistant shell: ViewShellManager overrides both on body from the
+     persisted settings.assistant widths. */
+  --assistant-sidebar-width: 420px;
+  --dock-width: 520px;
+
+  /* Brand flare — used as edge accents, corner blooms, and the signature
+     Agent user bubble. Three tiers: gradient (full), soft (translucent fill),
+     edge (low-opacity hairline), glow-soft (twin-source bloom shadow). */
+  --brand-cyan: #00DCFF;
+  --brand-magenta: #FF2486;
+  --brand-violet: #8080C3;
+  /* RGB channels for translucent brand washes: rgba(var(--brand-cyan-rgb), .2) */
+  --brand-cyan-rgb: 0, 220, 255;
+  --brand-magenta-rgb: 255, 36, 134;
+  --brand-violet-rgb: 128, 128, 195;
+  --brand-gradient: linear-gradient(135deg, var(--brand-cyan) 0%, var(--brand-magenta) 100%);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(0, 220, 255, 0.40) 0%, rgba(255, 36, 134, 0.40) 100%);
+  --brand-glow: 0 12px 32px rgba(0, 0, 0, 0.32), 0 0 28px rgba(0, 220, 255, 0.07), 0 0 38px rgba(255, 36, 134, 0.06);
+  --brand-glow-strong: 0 18px 44px rgba(0, 0, 0, 0.38), 0 0 22px rgba(0, 220, 255, 0.13), 0 0 36px rgba(255, 36, 134, 0.11);
+
+  /* Flare helpers — restrained brand presence for edges/corners/focus rewards.
+     Lower opacity than --brand-* so they balance against the muted accent
+     instead of overpowering it. */
+  --flare-edge: linear-gradient(135deg, rgba(0, 220, 255, 0.55) 0%, rgba(255, 36, 134, 0.58) 100%);
+  --flare-edge-soft: linear-gradient(135deg, rgba(0, 220, 255, 0.30) 0%, rgba(255, 36, 134, 0.32) 100%);
+  --flare-glow-soft: 0 0 18px rgba(0, 220, 255, 0.12), 0 0 32px rgba(255, 36, 134, 0.10);
+  --flare-glow-magenta: 0 0 22px rgba(255, 36, 134, 0.18), 0 4px 14px rgba(0, 0, 0, 0.32);
+  --flare-radial-corners:
+    radial-gradient(circle at 0% 0%, rgba(0, 220, 255, 0.06), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(255, 36, 134, 0.05), transparent 42%);
+
+  /* ---------- Semantic tokens — dark theme defaults ---------- */
+
+  /* Surfaces — four-tone dark scale */
+  --surface-sunken: #0b0e13;
+  --surface-base: #11151c;
+  --surface-raised: #181d26;
+  --surface-elevated: #232934;
+  --surface-overlay: var(--surface-elevated);
+  --surface-glass: rgba(24, 29, 38, 0.84);
+
+  /* Depth sheen — the film that makes raised controls read as raised.
+     A white top highlight over dark surfaces; light.css inverts it to a dark
+     bottom shade, because white sheen is invisible on a white surface. */
+  --sheen-rgb: 255, 255, 255;
+  --sheen-angle: 180deg;
+  --sheen-y: 1px;
+
+  /* Interactive surface states */
+  --surface-hover: rgba(255, 255, 255, 0.055);
+  --surface-active: rgba(255, 255, 255, 0.09);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.075);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-brand: rgba(47, 185, 214, 0.30);
+
+  /* Text */
+  --text-primary: #f4f7fb;
+  --text-secondary: #aab2bf;
+  --text-tertiary: #737d8d; /* decorative only — do not use for body */
+  --text-disabled: #4a515d;
+
+  /* Accent — calmed cyan, toned down from the vivid brand cyan so the
+     brand gradient stays the hero and pink flare moments still register. */
+  --accent: #2FB9D6;
+  --accent-hover: #45CDEC;
+  --accent-active: #1F94B0;
+  --accent-subtle: rgba(47, 185, 214, 0.13);
+  --accent-muted: rgba(47, 185, 214, 0.07);
+  --accent-on: #ffffff;
+
+  /* Status — calm, not alarming */
+  --status-success: #5ec489;
+  --status-success-bg: rgba(94, 196, 137, 0.14);
+  --status-warn: #d9b26e;
+  --status-warn-bg: rgba(217, 178, 110, 0.14);
+  --status-error: #e07a7a;
+  --status-error-bg: rgba(224, 122, 122, 0.14);
+  --status-info: #69dce8;
+  --status-info-bg: rgba(105, 220, 232, 0.14);
+
+  /* Shadows — soft, low opacity */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 18px 42px rgba(0, 0, 0, 0.38);
+  --shadow-overlay: 0 28px 80px rgba(0, 0, 0, 0.54);
+
+  /* Scrollbars */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.22);
+
+  /* Overlays (modal backdrops) */
+  --overlay-backdrop: rgba(0, 0, 0, 0.45);
+  --blur-backdrop: 8px;
+  --blur-glass: 18px;
+
+  /* Accent channels for translucent accent washes */
+  --accent-rgb: 47, 185, 214;
+
+  /* Syntax highlighting (code blocks, highlight.js token classes) */
+  --syntax-keyword: #c792ea;
+  --syntax-string: #a5d6a7;
+  --syntax-number: #f2a65a;
+  --syntax-comment: #8a93a3;
+  --syntax-function: #7ec8e3;
+  --syntax-title: #ffcb6b;
+  --syntax-attr: #9ccfd8;
+  --syntax-tag: #f07178;
+  --syntax-variable: #e6edf3;
+  --syntax-meta: #89ddff;
+  --syntax-addition: #5ec489;
+  --syntax-deletion: #e07a7a;
+
+  /* Diff rows (approval previews); text stays --text-primary on both. */
+  --diff-add-bg: rgba(94, 196, 137, 0.16);
+  --diff-del-bg: rgba(224, 122, 122, 0.16);
+
+}
+
+/* Syntax palette for the light theme; every value holds 4.5:1 on white. */
+body.theme-light {
+  --syntax-keyword: #8a3fbf;
+  --syntax-string: #2f7d32;
+  --syntax-number: #b35900;
+  --syntax-comment: #6b7380;
+  --syntax-function: #0b6e99;
+  --syntax-title: #8a6100;
+  --syntax-attr: #0e7490;
+  --syntax-tag: #c2334d;
+  --syntax-variable: #1a1c20;
+  --syntax-meta: #00718f;
+  --syntax-addition: #2f7d32;
+  --syntax-deletion: #b4232c;
+  --diff-add-bg: rgba(47, 125, 50, 0.12);
+  --diff-del-bg: rgba(180, 35, 44, 0.10);
+}
+
+/* Tokens derived from theme or accent tokens. A var() inside a custom property
+   resolves on the element that declares it, so these are re-declared on body,
+   where the theme classes and the user accent (inline style) live. */
+:root,
+body {
+  /* Focus ring — single accent layer plus a whisper of pink bloom. */
+  --focus-ring: 0 0 0 2px rgba(var(--accent-rgb), 0.45), 0 0 18px rgba(var(--brand-magenta-rgb), 0.12);
+  --focus-ring-inset: inset 0 0 0 1px var(--accent);
+
+  /* Compatibility aliases still referenced by older component styles. */
+  --surface-container: var(--surface-raised);
+  --surface-container-low: var(--surface-base);
+  --surface-container-high: var(--surface-overlay);
+  --surface-container-highest: var(--surface-elevated);
+  --surface-dim: var(--surface-sunken);
+  --surface-2: var(--surface-raised);
+  --surface-3: var(--surface-overlay);
+
+  --primary: var(--accent);
+  --primary-dark: var(--accent-active);
+  --primary-light: var(--accent-hover);
+  --primary-hover: var(--accent-hover);
+  --primary-active: var(--accent-active);
+
+  --error: var(--status-error);
+  --success: var(--status-success);
+  --warning: var(--status-warn);
+  --status-warning: var(--status-warn);
+  --status-warning-bg: var(--status-warn-bg);
+
+  --divider-color: var(--border-subtle);
+  --overlay: var(--overlay-backdrop);
+
+  --button-hover: var(--surface-hover);
+  --button-active: var(--surface-active);
+  --input-background: var(--surface-hover);
+  --input-border: var(--border-default);
+  --input-focus-border: var(--accent);
+
+  --on-primary: var(--accent-on);
+  --shadow-xl: var(--shadow-overlay);
+  --accent-default: var(--accent);
+}
