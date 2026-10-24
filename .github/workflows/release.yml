@@ -60,12 +60,15 @@ jobs:
     needs: version
     runs-on: ubuntu-24.04
     # The same Debian image the development CI uses, so both gate on one set
-    # of system libraries. The launch smoke runs as an unprivileged user:
+    # of system libraries. Tests and the launch smoke run as an unprivileged
+    # user: root reads through the permission bits the fs tests revoke, and
     # Chromium refuses to start as root with its sandbox on. Its sandbox needs
     # namespaces, which Docker's default profile withholds without SYS_ADMIN.
+    # --init reaps the processes the shell tests kill; without it they linger
+    # as zombies and still look alive.
     container:
       image: node:22-bookworm
-      options: --cap-add=SYS_ADMIN
+      options: --cap-add=SYS_ADMIN --init
 
     strategy:
       fail-fast: false
@@ -103,8 +106,9 @@ jobs:
       - name: Lint and unit tests
         if: matrix.name == 'linux-x64'
         run: |
-          npm run lint
-          npm test
+          useradd --create-home smoke
+          chown -R smoke "$GITHUB_WORKSPACE"
+          su smoke -s /bin/bash -c 'npm run lint && npm test'
         env:
           NODE_ENV: test
 
@@ -126,7 +130,6 @@ jobs:
           # electron downloads its binary on first use, not at install; fetch it
           # now so the sandbox helper exists to hand back to root below.
           node node_modules/electron/install.js
-          useradd --create-home smoke
           chown -R smoke "$GITHUB_WORKSPACE"
           # Chromium falls back to its setuid helper, which must stay root's.
           chown root:root node_modules/electron/dist/chrome-sandbox
@@ -197,6 +200,9 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
+          # Packaging the bundled Python runtimes opens more files at once
+          # than the runner's default limit of 256.
+          ulimit -n "$(sysctl -n kern.maxfilesperproc)"
           if [ -z "$MAC_CSC_LINK" ]; then
             echo "::warning::MAC_CSC_LINK is not set: building an ad-hoc signed, unnotarized macOS app."
             npm run build-mac -- -c.mac.identity=-
