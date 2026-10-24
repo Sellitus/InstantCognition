@@ -200,9 +200,11 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
-          # Packaging the bundled Python runtimes opens more files at once
-          # than the runner's default limit of 256.
-          ulimit -n "$(sysctl -n kern.maxfilesperproc)"
+          # Signing opens every file in the app at once, and the arm64 app
+          # bundles two Python runtimes (about 78,000 files), more than the
+          # runner's system cap. Node raises its own limit up to that cap.
+          sudo sysctl -w kern.maxfiles=1048576 kern.maxfilesperproc=1048576
+          ulimit -n 1048576
           if [ -z "$MAC_CSC_LINK" ]; then
             echo "::warning::MAC_CSC_LINK is not set: building an ad-hoc signed, unnotarized macOS app."
             npm run build-mac -- -c.mac.identity=-

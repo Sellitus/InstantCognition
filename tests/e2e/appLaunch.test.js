@@ -189,7 +189,11 @@ describeFn('Electron app launch', () => {
     const navigated = page.evaluate(() => new Promise((resolve) => {
       (/** @type {any} */ (window)).icShell.on('navigate-to-url', (payload) => resolve(payload && payload.url));
     }));
-    await prompt.click('#ok');
+    // OK closes the prompt window, which aborts a click still waiting on its
+    // input events, so the click runs after this evaluate has returned.
+    await prompt.evaluate(() => {
+      setTimeout(() => /** @type {HTMLButtonElement} */ (document.getElementById('ok')).click(), 0);
+    });
     expect(await navigated).toBe('https://example.com/');
   }, 30000);
 
