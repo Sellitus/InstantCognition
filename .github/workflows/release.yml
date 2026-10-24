@@ -1,0 +1,350 @@
+name: Release
+
+# Runs on a pushed v* tag, or by hand on one by someone with write access.
+# Never on pull requests: the jobs hold a write token and the signing secrets.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      electron: ${{ steps.electron.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Resolve version
+        id: resolve
+        run: |
+          if [ "$GITHUB_REF_TYPE" != "tag" ] || [ "${GITHUB_REF_NAME#v}" = "$GITHUB_REF_NAME" ]; then
+            echo "::error::Run this workflow on a v* tag, not $GITHUB_REF_NAME."
+            exit 1
+          fi
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Releases ship the newest patch of the Electron major in package.json,
+      # resolved once so every platform builds the same version. Moving to a
+      # new major is a package.json change, gated by the Linux launch smoke.
+      - name: Resolve Electron version
+        id: electron
+        run: |
+          MAJOR=$(node -p "require('./package.json').devDependencies.electron.replace(/^[^0-9]*/, '').split('.')[0]")
+          ELECTRON_VERSION=$(npm view "electron@$MAJOR" version --json | node -e "
+            const found = [].concat(JSON.parse(require('fs').readFileSync(0, 'utf8')));
+            const key = (v) => v.split('.').map(Number);
+            found.sort((a, b) => { const [x, y] = [key(a), key(b)]; return x[1] - y[1] || x[2] - y[2]; });
+            process.stdout.write(found[found.length - 1]);")
+          if [ -z "$ELECTRON_VERSION" ]; then
+            echo "::error::No published Electron $MAJOR.x found"
+            exit 1
+          fi
+          echo "Electron $ELECTRON_VERSION"
+          echo "version=$ELECTRON_VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: version
+    runs-on: ubuntu-24.04
+    # The same Debian image the development CI uses, so both gate on one set
+    # of system libraries. The launch smoke runs as an unprivileged user:
+    # Chromium refuses to start as root with its sandbox on. Its sandbox needs
+    # namespaces, which Docker's default profile withholds without SYS_ADMIN.
+    container:
+      image: node:22-bookworm
+      options: --cap-add=SYS_ADMIN
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both legs run on x64. The arm64 build cross-packages: its script
+        # fetches the arm64 llama-server, and electron-builder pulls the arm64
+        # Electron.
+        include:
+          - name: linux-x64
+            build_cmd: npm run build-linux-x64
+          - name: linux-arm64
+            build_cmd: npm run build-linux-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version
+        run: npm version ${{ needs.version.outputs.version }} --no-git-tag-version --allow-same-version
+
+      - name: Install release Electron
+        run: npm install --save-dev --save-exact electron@${{ needs.version.outputs.electron }}
+
+      # Runs after the Electron install so a release is gated on the version it
+      # ships. Both builds package the same code, so one leg is enough.
+      - name: Lint and unit tests
+        if: matrix.name == 'linux-x64'
+        run: |
+          npm run lint
+          npm test
+        env:
+          NODE_ENV: test
+
+      # The container carries no display server or Electron's GTK/NSS libraries.
+      - name: Install a display server
+        if: matrix.name == 'linux-x64'
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libnss3 libgbm1 libasound2 libxss1 libxtst6 libatk-bridge2.0-0 libdrm2
+
+      # The x64 runner cannot launch the arm64 Electron, and the launch gate
+      # covers the app code both builds share.
+      - name: Verify the app launches
+        if: matrix.name == 'linux-x64'
+        run: |
+          npm run build-css
+          node scripts/build-renderer.js
+          # electron downloads its binary on first use, not at install; fetch it
+          # now so the sandbox helper exists to hand back to root below.
+          node node_modules/electron/install.js
+          useradd --create-home smoke
+          chown -R smoke "$GITHUB_WORKSPACE"
+          # Chromium falls back to its setuid helper, which must stay root's.
+          chown root:root node_modules/electron/dist/chrome-sandbox
+          chmod 4755 node_modules/electron/dist/chrome-sandbox
+          su smoke -s /bin/bash -c 'xvfb-run --auto-servernum npm run test:e2e:app'
+        env:
+          NODE_ENV: test
+
+      - name: Build application
+        run: ${{ matrix.build_cmd }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect distributables
+        run: |
+          mkdir -p out-artifacts
+          # latest*.yml and the .blockmap files are the auto-update feed:
+          # electron-updater reads them off the release to find and diff builds.
+          find builds -maxdepth 1 -type f \
+            \( -name '*.dmg' -o -name '*.zip' -o -name '*.exe' -o -name '*.AppImage' \
+               -o -name 'latest*.yml' -o -name '*.blockmap' \) \
+            -exec cp {} out-artifacts/ \;
+          ls -la out-artifacts
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.name }}
+          path: out-artifacts/*
+          if-no-files-found: error
+
+  # Signing is optional until the certificates exist. Without MAC_CSC_LINK the
+  # app is ad-hoc signed: it runs, but Gatekeeper blocks the first launch of a
+  # download and Squirrel.Mac refuses updates to it. Notarization runs when the
+  # three APPLE_API_* secrets are set as well.
+  build-mac:
+    name: Build macOS
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version
+        run: npm version ${{ needs.version.outputs.version }} --no-git-tag-version --allow-same-version
+
+      - name: Install release Electron
+        run: npm install --save-dev --save-exact electron@${{ needs.version.outputs.electron }}
+
+      # An empty CSC_LINK is read as a certificate path and fails the build, so
+      # signing variables are exported only when their secret is set.
+      - name: Build application
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          if [ -z "$MAC_CSC_LINK" ]; then
+            echo "::warning::MAC_CSC_LINK is not set: building an ad-hoc signed, unnotarized macOS app."
+            npm run build-mac -- -c.mac.identity=-
+            exit 0
+          fi
+          export CSC_LINK="$MAC_CSC_LINK" CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
+          if [ -n "$APPLE_API_KEY_P8" ] && [ -n "$APPLE_API_KEY_ID" ] && [ -n "$APPLE_API_ISSUER" ]; then
+            APPLE_API_KEY="$RUNNER_TEMP/AuthKey_$APPLE_API_KEY_ID.p8"
+            printf '%s' "$APPLE_API_KEY_P8" > "$APPLE_API_KEY"
+            export APPLE_API_KEY
+          else
+            echo "::warning::APPLE_API_KEY_P8, APPLE_API_KEY_ID or APPLE_API_ISSUER is not set: the app is signed but not notarized."
+            unset APPLE_API_KEY_ID APPLE_API_ISSUER
+          fi
+          npm run build-mac
+
+      - name: Collect distributables
+        run: |
+          mkdir -p out-artifacts
+          find builds -maxdepth 1 -type f \
+            \( -name '*.dmg' -o -name '*.zip' -o -name 'latest*.yml' -o -name '*.blockmap' \) \
+            -exec cp {} out-artifacts/ \;
+          ls -la out-artifacts
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-mac
+          path: out-artifacts/*
+          if-no-files-found: error
+
+  # Unsigned without a certificate: SmartScreen warns on first run. Azure
+  # Trusted Signing takes precedence over a .pfx when both are configured.
+  build-windows:
+    name: Build Windows
+    needs: version
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      # The build scripts set environment variables POSIX-style (VAR=x cmd),
+      # which cmd.exe, npm's default script shell on Windows, cannot run.
+      - name: Run npm scripts in bash
+        run: npm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version
+        run: npm version ${{ needs.version.outputs.version }} --no-git-tag-version --allow-same-version
+
+      - name: Install release Electron
+        run: npm install --save-dev --save-exact electron@${{ needs.version.outputs.electron }}
+
+      - name: Build application
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WIN_PFX_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_PFX_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGN_ENDPOINT: ${{ secrets.AZURE_SIGN_ENDPOINT }}
+          AZURE_SIGN_ACCOUNT: ${{ secrets.AZURE_SIGN_ACCOUNT }}
+          AZURE_SIGN_PROFILE: ${{ secrets.AZURE_SIGN_PROFILE }}
+          AZURE_SIGN_PUBLISHER: ${{ secrets.AZURE_SIGN_PUBLISHER }}
+        run: |
+          if [ -n "$AZURE_CLIENT_SECRET" ]; then
+            for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_SIGN_ENDPOINT AZURE_SIGN_ACCOUNT AZURE_SIGN_PROFILE AZURE_SIGN_PUBLISHER; do
+              if [ -z "${!name}" ]; then
+                echo "::error::AZURE_CLIENT_SECRET is set but $name is not."
+                exit 1
+              fi
+            done
+            npm run build-win -- \
+              "-c.win.azureSignOptions.endpoint=$AZURE_SIGN_ENDPOINT" \
+              "-c.win.azureSignOptions.codeSigningAccountName=$AZURE_SIGN_ACCOUNT" \
+              "-c.win.azureSignOptions.certificateProfileName=$AZURE_SIGN_PROFILE" \
+              "-c.win.azureSignOptions.publisherName=$AZURE_SIGN_PUBLISHER"
+          elif [ -n "$WIN_PFX_LINK" ]; then
+            WIN_CSC_LINK="$WIN_PFX_LINK" WIN_CSC_KEY_PASSWORD="$WIN_PFX_PASSWORD" npm run build-win
+          else
+            echo "::warning::No Windows signing secrets are set: building an unsigned Windows app."
+            npm run build-win
+          fi
+
+      - name: Collect distributables
+        run: |
+          mkdir -p out-artifacts
+          find builds -maxdepth 1 -type f \
+            \( -name '*.exe' -o -name 'latest*.yml' -o -name '*.blockmap' \) \
+            -exec cp {} out-artifacts/ \;
+          ls -la out-artifacts
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows
+          path: out-artifacts/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: [version, build, build-mac, build-windows]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: artifacts
+        run: sha256sum ./* > SHA256SUMS.txt
+
+      # Uploaded as a draft and published only once every asset is in place:
+      # electron-updater ignores drafts, and a published release still missing
+      # its latest*.yml would fail every client's update check meanwhile. A
+      # version with a hyphen (4.1.0-beta.1) is a prerelease, which only the
+      # beta update channel takes.
+      - name: Upload release assets
+        id: upload
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: v${{ needs.version.outputs.version }}
+          draft: true
+          prerelease: ${{ contains(needs.version.outputs.version, '-') }}
+          body: |
+            Electron ${{ needs.version.outputs.electron }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: artifacts/*
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ steps.upload.outputs.id }}
+        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false

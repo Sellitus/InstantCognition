@@ -221,9 +221,9 @@ The repo also carries four zero-argument scripts that wrap the above, so tooling
 
 ### Releases
 
-A pushed `v*` tag builds Linux x64/arm64 AppImages on the self-hosted runners, macOS arm64/x64 on `macos-latest` and Windows x64/arm64 on `windows-latest` (`.github/workflows/release.yml`), then publishes them to one release that carries update artifacts, not source.
+Releases build in the public repository, the one the app updates from. A `v*` tag pushed in the development repository mirrors the source to public `main` and pushes the tag there (`.github/workflows/release.yml`). That needs a `RELEASE_TOKEN` secret with Contents and Workflows read/write on the public repository. The tag starts the public repository's release workflow (`.github/public-workflows/release.yml` in development, `.github/workflows/release.yml` in public). It runs lint, the test suite and the Linux launch smoke, then builds Linux x64/arm64 AppImages, macOS arm64/x64 and Windows x64/arm64 on GitHub's hosted runners, and publishes them to one release with the auto-update feed and checksums.
 
-Signing is optional and turns on when the secrets exist:
+Signing is optional and turns on when these secrets exist in the public repository:
 
 | Secret | Effect |
 |---|---|
